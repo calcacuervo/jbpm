@@ -1,8 +1,20 @@
-/**
- * <copyright>
- * </copyright>
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
- * $Id$
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
  */
 package org.jboss.drools;
 
@@ -116,13 +128,22 @@ public interface DroolsPackage extends EPackage {
 	int DOCUMENT_ROOT__IMPORT = 4;
 
 	/**
+	 * The feature id for the '<em><b>Meta Data</b></em>' containment reference.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int DOCUMENT_ROOT__META_DATA = 5;
+
+	/**
 	 * The feature id for the '<em><b>On Entry Script</b></em>' containment reference.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int DOCUMENT_ROOT__ON_ENTRY_SCRIPT = 5;
+	int DOCUMENT_ROOT__ON_ENTRY_SCRIPT = 6;
 
 	/**
 	 * The feature id for the '<em><b>On Exit Script</b></em>' containment reference.
@@ -131,7 +152,7 @@ public interface DroolsPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int DOCUMENT_ROOT__ON_EXIT_SCRIPT = 6;
+	int DOCUMENT_ROOT__ON_EXIT_SCRIPT = 7;
 
 	/**
 	 * The feature id for the '<em><b>Package Name</b></em>' attribute.
@@ -140,7 +161,7 @@ public interface DroolsPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int DOCUMENT_ROOT__PACKAGE_NAME = 7;
+	int DOCUMENT_ROOT__PACKAGE_NAME = 8;
 
 	/**
 	 * The feature id for the '<em><b>Priority</b></em>' attribute.
@@ -149,7 +170,7 @@ public interface DroolsPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int DOCUMENT_ROOT__PRIORITY = 8;
+	int DOCUMENT_ROOT__PRIORITY = 9;
 
 	/**
 	 * The feature id for the '<em><b>Rule Flow Group</b></em>' attribute.
@@ -158,7 +179,7 @@ public interface DroolsPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int DOCUMENT_ROOT__RULE_FLOW_GROUP = 9;
+	int DOCUMENT_ROOT__RULE_FLOW_GROUP = 10;
 
 	/**
 	 * The feature id for the '<em><b>Task Name</b></em>' attribute.
@@ -167,7 +188,7 @@ public interface DroolsPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int DOCUMENT_ROOT__TASK_NAME = 10;
+	int DOCUMENT_ROOT__TASK_NAME = 11;
 
 	/**
 	 * The feature id for the '<em><b>Version</b></em>' attribute.
@@ -176,7 +197,7 @@ public interface DroolsPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int DOCUMENT_ROOT__VERSION = 11;
+	int DOCUMENT_ROOT__VERSION = 12;
 
 	/**
 	 * The number of structural features of the '<em>Document Root</em>' class.
@@ -185,7 +206,7 @@ public interface DroolsPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int DOCUMENT_ROOT_FEATURE_COUNT = 12;
+	int DOCUMENT_ROOT_FEATURE_COUNT = 13;
 
 	/**
 	 * The meta object id for the '{@link org.jboss.drools.impl.GlobalTypeImpl <em>Global Type</em>}' class.
@@ -253,6 +274,43 @@ public interface DroolsPackage extends EPackage {
 	int IMPORT_TYPE_FEATURE_COUNT = 1;
 
 	/**
+	 * The meta object id for the '{@link org.jboss.drools.impl.MetaDataTypeImpl <em>Meta Data Type</em>}' class.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see org.jboss.drools.impl.MetaDataTypeImpl
+	 * @see org.jboss.drools.impl.DroolsPackageImpl#getMetaDataType()
+	 * @generated
+	 */
+	int META_DATA_TYPE = 3;
+
+	/**
+	 * The feature id for the '<em><b>Meta Value</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int META_DATA_TYPE__META_VALUE = 0;
+
+	/**
+	 * The feature id for the '<em><b>Name</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int META_DATA_TYPE__NAME = 1;
+
+	/**
+	 * The number of structural features of the '<em>Meta Data Type</em>' class.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int META_DATA_TYPE_FEATURE_COUNT = 2;
+
+	/**
 	 * The meta object id for the '{@link org.jboss.drools.impl.OnEntryScriptTypeImpl <em>On Entry Script Type</em>}' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -260,7 +318,7 @@ public interface DroolsPackage extends EPackage {
 	 * @see org.jboss.drools.impl.DroolsPackageImpl#getOnEntryScriptType()
 	 * @generated
 	 */
-	int ON_ENTRY_SCRIPT_TYPE = 3;
+	int ON_ENTRY_SCRIPT_TYPE = 4;
 
 	/**
 	 * The feature id for the '<em><b>Script</b></em>' attribute.
@@ -297,7 +355,7 @@ public interface DroolsPackage extends EPackage {
 	 * @see org.jboss.drools.impl.DroolsPackageImpl#getOnExitScriptType()
 	 * @generated
 	 */
-	int ON_EXIT_SCRIPT_TYPE = 4;
+	int ON_EXIT_SCRIPT_TYPE = 5;
 
 	/**
 	 * The feature id for the '<em><b>Script</b></em>' attribute.
@@ -334,7 +392,7 @@ public interface DroolsPackage extends EPackage {
 	 * @see org.jboss.drools.impl.DroolsPackageImpl#getPackageNameType()
 	 * @generated
 	 */
-	int PACKAGE_NAME_TYPE = 5;
+	int PACKAGE_NAME_TYPE = 6;
 
 	/**
 	 * The meta object id for the '<em>Priority Type</em>' data type.
@@ -344,7 +402,7 @@ public interface DroolsPackage extends EPackage {
 	 * @see org.jboss.drools.impl.DroolsPackageImpl#getPriorityType()
 	 * @generated
 	 */
-	int PRIORITY_TYPE = 6;
+	int PRIORITY_TYPE = 7;
 
 	/**
 	 * The meta object id for the '<em>Rule Flow Group Type</em>' data type.
@@ -354,7 +412,7 @@ public interface DroolsPackage extends EPackage {
 	 * @see org.jboss.drools.impl.DroolsPackageImpl#getRuleFlowGroupType()
 	 * @generated
 	 */
-	int RULE_FLOW_GROUP_TYPE = 7;
+	int RULE_FLOW_GROUP_TYPE = 8;
 
 	/**
 	 * The meta object id for the '<em>Task Name Type</em>' data type.
@@ -364,7 +422,7 @@ public interface DroolsPackage extends EPackage {
 	 * @see org.jboss.drools.impl.DroolsPackageImpl#getTaskNameType()
 	 * @generated
 	 */
-	int TASK_NAME_TYPE = 8;
+	int TASK_NAME_TYPE = 9;
 
 	/**
 	 * The meta object id for the '<em>Version Type</em>' data type.
@@ -374,7 +432,7 @@ public interface DroolsPackage extends EPackage {
 	 * @see org.jboss.drools.impl.DroolsPackageImpl#getVersionType()
 	 * @generated
 	 */
-	int VERSION_TYPE = 9;
+	int VERSION_TYPE = 10;
 
 
 	/**
@@ -441,6 +499,17 @@ public interface DroolsPackage extends EPackage {
 	 * @generated
 	 */
 	EReference getDocumentRoot_Import();
+
+	/**
+	 * Returns the meta object for the containment reference '{@link org.jboss.drools.DocumentRoot#getMetaData <em>Meta Data</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the containment reference '<em>Meta Data</em>'.
+	 * @see org.jboss.drools.DocumentRoot#getMetaData()
+	 * @see #getDocumentRoot()
+	 * @generated
+	 */
+	EReference getDocumentRoot_MetaData();
 
 	/**
 	 * Returns the meta object for the containment reference '{@link org.jboss.drools.DocumentRoot#getOnEntryScript <em>On Entry Script</em>}'.
@@ -571,6 +640,38 @@ public interface DroolsPackage extends EPackage {
 	 * @generated
 	 */
 	EAttribute getImportType_Name();
+
+	/**
+	 * Returns the meta object for class '{@link org.jboss.drools.MetaDataType <em>Meta Data Type</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for class '<em>Meta Data Type</em>'.
+	 * @see org.jboss.drools.MetaDataType
+	 * @generated
+	 */
+	EClass getMetaDataType();
+
+	/**
+	 * Returns the meta object for the attribute '{@link org.jboss.drools.MetaDataType#getMetaValue <em>Meta Value</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the attribute '<em>Meta Value</em>'.
+	 * @see org.jboss.drools.MetaDataType#getMetaValue()
+	 * @see #getMetaDataType()
+	 * @generated
+	 */
+	EAttribute getMetaDataType_MetaValue();
+
+	/**
+	 * Returns the meta object for the attribute '{@link org.jboss.drools.MetaDataType#getName <em>Name</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the attribute '<em>Name</em>'.
+	 * @see org.jboss.drools.MetaDataType#getName()
+	 * @see #getMetaDataType()
+	 * @generated
+	 */
+	EAttribute getMetaDataType_Name();
 
 	/**
 	 * Returns the meta object for class '{@link org.jboss.drools.OnEntryScriptType <em>On Entry Script Type</em>}'.
@@ -769,6 +870,14 @@ public interface DroolsPackage extends EPackage {
 		EReference DOCUMENT_ROOT__IMPORT = eINSTANCE.getDocumentRoot_Import();
 
 		/**
+		 * The meta object literal for the '<em><b>Meta Data</b></em>' containment reference feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EReference DOCUMENT_ROOT__META_DATA = eINSTANCE.getDocumentRoot_MetaData();
+
+		/**
 		 * The meta object literal for the '<em><b>On Entry Script</b></em>' containment reference feature.
 		 * <!-- begin-user-doc -->
 		 * <!-- end-user-doc -->
@@ -867,6 +976,32 @@ public interface DroolsPackage extends EPackage {
 		 * @generated
 		 */
 		EAttribute IMPORT_TYPE__NAME = eINSTANCE.getImportType_Name();
+
+		/**
+		 * The meta object literal for the '{@link org.jboss.drools.impl.MetaDataTypeImpl <em>Meta Data Type</em>}' class.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @see org.jboss.drools.impl.MetaDataTypeImpl
+		 * @see org.jboss.drools.impl.DroolsPackageImpl#getMetaDataType()
+		 * @generated
+		 */
+		EClass META_DATA_TYPE = eINSTANCE.getMetaDataType();
+
+		/**
+		 * The meta object literal for the '<em><b>Meta Value</b></em>' attribute feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EAttribute META_DATA_TYPE__META_VALUE = eINSTANCE.getMetaDataType_MetaValue();
+
+		/**
+		 * The meta object literal for the '<em><b>Name</b></em>' attribute feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EAttribute META_DATA_TYPE__NAME = eINSTANCE.getMetaDataType_Name();
 
 		/**
 		 * The meta object literal for the '{@link org.jboss.drools.impl.OnEntryScriptTypeImpl <em>On Entry Script Type</em>}' class.

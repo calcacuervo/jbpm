@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,31 +18,38 @@ package org.jbpm.workflow.core.node;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.drools.definition.process.Connection;
+import org.kie.api.definition.process.Connection;
+import org.jbpm.process.core.Context;
+import org.jbpm.process.core.ContextContainer;
+import org.jbpm.process.core.context.AbstractContext;
 import org.jbpm.process.core.context.variable.Mappable;
+import org.jbpm.process.core.impl.ContextContainerImpl;
 
 
 /**
  * Default implementation of a sub-flow node.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
-public class SubProcessNode extends StateBasedNode implements Mappable {
+public class SubProcessNode extends StateBasedNode implements Mappable, ContextContainer {
 
 	private static final long serialVersionUID = 510l;
+	
+	// NOTE: ContetxInstances are not persisted as current functionality (exception scope) does not require it
+    private ContextContainer contextContainer = new ContextContainerImpl();
 	
 	private String processId;
 	private String processName;
 	private boolean waitForCompletion = true;
 
-        private List<DataAssociation> inMapping = new LinkedList<DataAssociation>();
-        private List<DataAssociation> outMapping = new LinkedList<DataAssociation>();
+    private List<DataAssociation> inMapping = new LinkedList<DataAssociation>();
+    private List<DataAssociation> outMapping = new LinkedList<DataAssociation>();
 
-    private boolean independent = true;
+    private boolean independent = true;    
 
     public void setProcessId(final String processId) {
         this.processId = processId;
@@ -62,6 +69,10 @@ public class SubProcessNode extends StateBasedNode implements Mappable {
 
     public void addInMapping(String parameterName, String variableName) {
     	inMapping.add(new DataAssociation(variableName, parameterName, null, null));
+    }
+    
+    public void addInMapping(String parameterName, String variableName, Transformation transformation) {
+    	inMapping.add(new DataAssociation(variableName, parameterName, null, transformation));
     }
 
     public void setInMappings(Map<String, String> inMapping) {
@@ -96,6 +107,10 @@ public class SubProcessNode extends StateBasedNode implements Mappable {
     public void addOutMapping(String parameterName, String variableName) {
     	outMapping.add(new DataAssociation(parameterName, variableName, null, null));
     }
+    
+    public void addOutMapping(String parameterName, String variableName, Transformation transformation) {
+    	outMapping.add(new DataAssociation(parameterName, variableName, null, transformation));
+    }
 
     public void setOutMappings(Map<String, String> outMapping) {
     	this.outMapping = new LinkedList<DataAssociation>();
@@ -118,6 +133,19 @@ public class SubProcessNode extends StateBasedNode implements Mappable {
     	return out;
     }
     
+    public void adjustOutMapping(String forEachOutVariable) {
+        if (forEachOutVariable == null) {
+            return;
+        }
+        Iterator<DataAssociation> it = outMapping.iterator();
+        while (it.hasNext()) {
+            DataAssociation association = it.next();
+            if (forEachOutVariable.equals(association.getTarget())) {
+                it.remove();
+            }
+        }
+    }
+    
     public void addOutAssociation(DataAssociation dataAssociation) {
         outMapping.add(dataAssociation);
     }
@@ -136,24 +164,28 @@ public class SubProcessNode extends StateBasedNode implements Mappable {
     public void validateAddIncomingConnection(final String type, final Connection connection) {
         super.validateAddIncomingConnection(type, connection);
         if (!org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE.equals(type)) {
-            throw new IllegalArgumentException(
-                "This type of node only accepts default incoming connection type!");
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getTo().getMetaData().get("UniqueId") + ", " + connection.getTo().getName() 
+                    + "] only accepts default incoming connection type!");
         }
-        if (getFrom() != null && System.getProperty("jbpm.enable.multi.con") == null) {
-            throw new IllegalArgumentException(
-                 "This type of node cannot have more than one incoming connection!");
+        if (getFrom() != null && !"true".equals(System.getProperty("jbpm.enable.multi.con"))) {
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getTo().getMetaData().get("UniqueId") + ", " + connection.getTo().getName() 
+                    + "] cannot have more than one incoming connection!");
         }
     }
 
     public void validateAddOutgoingConnection(final String type, final Connection connection) {
         super.validateAddOutgoingConnection(type, connection);
         if (!org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE.equals(type)) {
-            throw new IllegalArgumentException(
-                "This type of node only accepts default outgoing connection type!");
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getFrom().getMetaData().get("UniqueId") + ", " + connection.getFrom().getName() 
+                    + "] only accepts default outgoing connection type!");
         }
-        if (getTo() != null && System.getProperty("jbpm.enable.multi.con") == null) {
-            throw new IllegalArgumentException(
-              "This type of node cannot have more than one outgoing connection!");
+        if (getTo() != null && !"true".equals(System.getProperty("jbpm.enable.multi.con"))) {
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getFrom().getMetaData().get("UniqueId") + ", " + connection.getFrom().getName() 
+                    + "] cannot have more than one outgoing connection!");
         }
     }
 
@@ -164,5 +196,45 @@ public class SubProcessNode extends StateBasedNode implements Mappable {
     public String getProcessName() {
         return processName;
     }
+
+    public List<Context> getContexts(String contextType) {
+        return contextContainer.getContexts(contextType);
+    }
     
+    public void addContext(Context context) {
+        ((AbstractContext) context).setContextContainer(this);
+        contextContainer.addContext(context);
+    }
+    
+    public Context getContext(String contextType, long id) {
+        return contextContainer.getContext(contextType, id);
+    }
+
+    public void setDefaultContext(Context context) {
+        ((AbstractContext) context).setContextContainer(this);
+        contextContainer.setDefaultContext(context);
+    }
+    
+    public Context getDefaultContext(String contextType) {
+        return contextContainer.getDefaultContext(contextType);
+    }
+
+    @Override
+    public Context getContext(String contextId) {
+        Context context = getDefaultContext(contextId);
+        if (context != null) {
+            return context;
+        }
+        return super.getContext(contextId);
+    }
+
+    public boolean isAbortParent() {
+        
+        String abortParent = (String) getMetaData("customAbortParent");
+        if (abortParent == null) {
+            return true;
+        }
+        return Boolean.parseBoolean(abortParent);
+    }
+
 }

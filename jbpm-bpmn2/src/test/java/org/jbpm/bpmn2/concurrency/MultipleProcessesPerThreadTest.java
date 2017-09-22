@@ -1,31 +1,46 @@
-package org.jbpm.bpmn2.concurrency;
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import static junit.framework.Assert.assertTrue;
+package org.jbpm.bpmn2.concurrency;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import org.drools.KnowledgeBase;
-import org.drools.KnowledgeBaseFactory;
-import org.drools.builder.KnowledgeBuilder;
-import org.drools.builder.KnowledgeBuilderFactory;
-import org.drools.builder.ResourceType;
-import org.drools.event.process.ProcessCompletedEvent;
-import org.drools.event.process.ProcessEventListener;
-import org.drools.event.process.ProcessNodeLeftEvent;
-import org.drools.event.process.ProcessNodeTriggeredEvent;
-import org.drools.event.process.ProcessStartedEvent;
-import org.drools.event.process.ProcessVariableChangedEvent;
-import org.drools.io.ResourceFactory;
-import org.drools.persistence.util.LoggingPrintStream;
-import org.drools.runtime.StatefulKnowledgeSession;
-import org.drools.runtime.process.WorkItem;
-import org.drools.runtime.process.WorkItemHandler;
-import org.drools.runtime.process.WorkItemManager;
+import org.drools.core.impl.InternalKnowledgeBase;
+import org.drools.core.impl.KnowledgeBaseFactory;
 import org.jbpm.bpmn2.objects.Status;
+import org.jbpm.bpmn2.objects.TestWorkItemHandler;
+import org.jbpm.test.util.AbstractBaseTest;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.kie.api.KieBase;
+import org.kie.api.event.process.ProcessCompletedEvent;
+import org.kie.api.event.process.ProcessEventListener;
+import org.kie.api.event.process.ProcessNodeLeftEvent;
+import org.kie.api.event.process.ProcessNodeTriggeredEvent;
+import org.kie.api.event.process.ProcessStartedEvent;
+import org.kie.api.event.process.ProcessVariableChangedEvent;
+import org.kie.api.io.ResourceType;
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.process.WorkItem;
+import org.kie.internal.builder.KnowledgeBuilder;
+import org.kie.internal.builder.KnowledgeBuilderFactory;
+import org.kie.internal.io.ResourceFactory;
+import org.kie.internal.runtime.StatefulKnowledgeSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,17 +48,14 @@ import org.slf4j.LoggerFactory;
  * This test costs time and resources, please only run locally for the time being.
  */
 @Ignore
-public class MultipleProcessesPerThreadTest {
+public class MultipleProcessesPerThreadTest extends AbstractBaseTest {
     
     private static final int LOOPS = 1000;
     
-    private static Logger logger = LoggerFactory.getLogger(MultipleProcessesPerThreadTest.class);
-    static { 
-        System.setOut(new LoggingPrintStream(System.out));
-    }
+    private static final Logger logger = LoggerFactory.getLogger(MultipleProcessesPerThreadTest.class);
     
-    protected static StatefulKnowledgeSession createStatefulKnowledgeSession(KnowledgeBase kbase) { 
-        return kbase.newStatefulKnowledgeSession();
+    protected static KieSession createStatefulKnowledgeSession(KieBase kbase) {
+        return kbase.newKieSession();
     }
     
     @Test
@@ -79,13 +91,13 @@ public class MultipleProcessesPerThreadTest {
 
         public void run() {
             this.status = Status.SUCCESS;
-            StatefulKnowledgeSession ksession = null;
+            KieSession ksession = null;
             
             try { 
                 KnowledgeBuilder kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
                 kbuilder.add(ResourceFactory.newClassPathResource("BPMN2-MultiThreadServiceProcess-Timer.bpmn", getClass()), ResourceType.BPMN2);
-                KnowledgeBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
-                kbase.addKnowledgePackages(kbuilder.getKnowledgePackages());
+                InternalKnowledgeBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
+                kbase.addPackages(kbuilder.getKnowledgePackages());
 
                 ksession = createStatefulKnowledgeSession(kbase);
             } catch(Exception e) { 
@@ -95,7 +107,7 @@ public class MultipleProcessesPerThreadTest {
             }
 
             for (int i = 1; i <= LOOPS; i++) {
-                logger.debug("Starting hello world process, loop " + i + "/" + LOOPS);
+                logger.debug("Starting hello world process, loop {}/{}", i, LOOPS);
 
                 latch = new CountDownLatch(1);
                 CompleteProcessListener listener = new CompleteProcessListener(latch);
@@ -134,13 +146,13 @@ public class MultipleProcessesPerThreadTest {
 
         public void run() {
             this.status = Status.SUCCESS;
-            StatefulKnowledgeSession ksession = null;
+            KieSession ksession = null;
             
             try { 
                 KnowledgeBuilder kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
                 kbuilder.add(ResourceFactory.newClassPathResource("BPMN2-MultiThreadServiceProcess-Task.bpmn", getClass()), ResourceType.BPMN2);
-                KnowledgeBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
-                kbase.addKnowledgePackages(kbuilder.getKnowledgePackages());
+                InternalKnowledgeBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
+                kbase.addPackages(kbuilder.getKnowledgePackages());
 
                 ksession = createStatefulKnowledgeSession(kbase);
             } catch(Exception e) { 
@@ -153,7 +165,7 @@ public class MultipleProcessesPerThreadTest {
             ksession.getWorkItemManager().registerWorkItemHandler("Human Task", workItemHandler);
 
             for (int i = 1; i <= LOOPS; i++) {
-                logger.debug("Starting user task process, loop " + i + "/" + LOOPS);
+                logger.debug("Starting user task process, loop {}/{}", i, LOOPS);
 
                 latch = new CountDownLatch(1);
                 CompleteProcessListener listener = new CompleteProcessListener(latch);
@@ -193,38 +205,6 @@ public class MultipleProcessesPerThreadTest {
 
         public synchronized void join() throws InterruptedException {
             thread.join();
-        }
-
-    }
-
-    public static class TestWorkItemHandler implements WorkItemHandler {
-
-        private List<WorkItem> workItems = new ArrayList<WorkItem>();
-
-        public void executeWorkItem(WorkItem workItem, WorkItemManager manager) {
-            workItems.add(workItem);
-        }
-
-        public void abortWorkItem(WorkItem workItem, WorkItemManager manager) {
-        }
-
-        public WorkItem getWorkItem() {
-            if (workItems.size() == 0) {
-                return null;
-            }
-            if (workItems.size() == 1) {
-                WorkItem result = workItems.get(0);
-                this.workItems.clear();
-                return result;
-            } else {
-                throw new IllegalArgumentException("More than one work item active");
-            }
-        }
-
-        public List<WorkItem> getWorkItems() {
-            List<WorkItem> result = new ArrayList<WorkItem>(workItems);
-            workItems.clear();
-            return result;
         }
 
     }

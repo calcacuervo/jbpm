@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,10 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.drools.compiler.xml.XmlDumper;
-import org.drools.process.core.Work;
-import org.drools.process.core.impl.WorkImpl;
-import org.drools.xml.ExtensibleXmlParser;
+import org.drools.compiler.compiler.xml.XmlDumper;
+import org.jbpm.process.core.Work;
+import org.drools.core.xml.ExtensibleXmlParser;
 import org.jbpm.workflow.core.Node;
 import org.jbpm.workflow.core.node.HumanTaskNode;
 import org.jbpm.workflow.core.node.WorkItemNode;
@@ -55,14 +54,12 @@ public class UserTaskHandler extends TaskHandler {
     	org.w3c.dom.Node xmlNode = element.getFirstChild();
         while (xmlNode != null) {
         	String nodeName = xmlNode.getNodeName();
-        	if ("ioSpecification".equals(nodeName)) {
-        		readIoSpecification(xmlNode, dataInputs, dataOutputs);
-//        	} else if ("dataInputAssociation".equals(nodeName)) {
- //       		readDataInputAssociation(xmlNode, humanTaskNode, dataInputs);
-  //      	} else if ("dataOutputAssociation".equals(nodeName)) {
-   //     		readDataOutputAssociation(xmlNode, humanTaskNode, dataOutputs);
-        	} else if ("potentialOwner".equals(nodeName)) {
-        		owners.add(readPotentialOwner(xmlNode, humanTaskNode));
+        	// ioSpec and data{Input,Output}Spec handled in super.handleNode(...)
+        	if ("potentialOwner".equals(nodeName)) {
+        		String owner = readPotentialOwner(xmlNode, humanTaskNode);
+        		if (owner != null) {
+        			owners.add(owner);
+        		}
         	}
     		xmlNode = xmlNode.getNextSibling();
         }
@@ -73,17 +70,28 @@ public class UserTaskHandler extends TaskHandler {
         	}
         	humanTaskNode.getWork().setParameter("ActorId", owner);        	
         }
+        humanTaskNode.getWork().setParameter("NodeName", humanTaskNode.getName() ); 
     }
     
     protected String readPotentialOwner(org.w3c.dom.Node xmlNode, HumanTaskNode humanTaskNode) {
-		return xmlNode.getFirstChild().getFirstChild().getFirstChild().getTextContent();
+    	org.w3c.dom.Node node = xmlNode.getFirstChild();
+		if (node != null) {
+			node = node.getFirstChild();
+			if (node != null) {
+				node = node.getFirstChild();
+				if (node != null) {
+					return node.getTextContent();
+				}
+			}
+		}
+		return null;
     }
     
 	public void writeNode(Node node, StringBuilder xmlDump, int metaDataType) {
 		HumanTaskNode humanTaskNode = (HumanTaskNode) node;
 		writeNode("userTask", humanTaskNode, xmlDump, metaDataType);
 		xmlDump.append(">" + EOL);
-		writeScripts(humanTaskNode, xmlDump);
+		writeExtensionElements(humanTaskNode, xmlDump);
 		writeIO(humanTaskNode, xmlDump);
 		String ownerString = (String) humanTaskNode.getWork().getParameter("ActorId");
 		if (ownerString != null) {

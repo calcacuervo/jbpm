@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,18 +18,17 @@ package org.jbpm.process.instance.impl;
 
 import java.io.Serializable;
 
-import org.drools.definition.process.Connection;
-import org.drools.runtime.process.WorkflowProcessInstance;
-import org.drools.runtime.rule.impl.InternalAgenda;
+import org.drools.core.common.InternalAgenda;
 import org.jbpm.process.instance.ProcessInstance;
 import org.jbpm.workflow.core.Constraint;
 import org.jbpm.workflow.core.Node;
-import org.jbpm.workflow.instance.node.SplitInstance;
+import org.jbpm.workflow.instance.NodeInstance;
+import org.kie.api.definition.process.Connection;
+import org.kie.api.runtime.process.WorkflowProcessInstance;
 
 /**
  * Default implementation of a constraint.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public class RuleConstraintEvaluator implements Constraint,
         ConstraintEvaluator, Serializable {
@@ -95,7 +94,7 @@ public class RuleConstraintEvaluator implements Constraint,
 		this.isDefault = isDefault;
 	}
 
-	public boolean evaluate(SplitInstance instance,
+	public boolean evaluate(NodeInstance instance,
                             Connection connection,
                             Constraint constraint) {
         WorkflowProcessInstance processInstance = instance.getProcessInstance();
@@ -104,8 +103,7 @@ public class RuleConstraintEvaluator implements Constraint,
         	((Node) instance.getNode()).getUniqueId() + "-" + 
         	((Node) connection.getTo()).getUniqueId() + "-" + connection.getToType();
 
-        boolean isActive = agenda.isRuleActiveInRuleFlowGroup( "DROOLS_SYSTEM", rule, processInstance.getId() );
-        return isActive;
+        return agenda.isRuleActiveInRuleFlowGroup( "DROOLS_SYSTEM", rule, processInstance.getId() );
     }
 
 	public Object getMetaData(String name) {

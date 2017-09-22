@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,20 @@ package org.jbpm.process.instance;
 
 import java.util.Collection;
 
-import org.drools.runtime.process.ProcessInstance;
+import org.kie.internal.process.CorrelationKey;
+import org.kie.api.runtime.process.ProcessInstance;
 
 public interface ProcessInstanceManager {
 
     ProcessInstance getProcessInstance(long id);
     
+    ProcessInstance getProcessInstance(long id, boolean readOnly);
+
+    ProcessInstance getProcessInstance(CorrelationKey correlationKey);
+    
     Collection<ProcessInstance> getProcessInstances();
 
-    void addProcessInstance(ProcessInstance processInstance);
+    void addProcessInstance(ProcessInstance processInstance, CorrelationKey correlationKey);
     
     void internalAddProcessInstance(ProcessInstance processInstance);
 
@@ -35,5 +40,7 @@ public interface ProcessInstanceManager {
     void internalRemoveProcessInstance(ProcessInstance processInstance);
     
     void clearProcessInstances();
+    
+    void clearProcessInstancesState();
 
 }

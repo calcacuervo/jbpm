@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,8 @@
 
 package org.jbpm.bpmn2.xml;
 
-import org.drools.rule.builder.dialect.java.JavaDialect;
-import org.drools.xml.ExtensibleXmlParser;
+import org.drools.compiler.rule.builder.dialect.java.JavaDialect;
+import org.drools.core.xml.ExtensibleXmlParser;
 import org.jbpm.workflow.core.Node;
 import org.jbpm.workflow.core.impl.DroolsConsequenceAction;
 import org.jbpm.workflow.core.node.ActionNode;
@@ -42,6 +42,7 @@ public class ScriptTaskHandler extends AbstractNodeHandler {
             final String localName, final ExtensibleXmlParser parser) throws SAXException {
     	super.handleNode(node, element, uri, localName, parser);
         ActionNode actionNode = (ActionNode) node;
+        node.setMetaData("NodeType", "ScriptTask");
         DroolsConsequenceAction action = (DroolsConsequenceAction) actionNode.getAction();
         if (action == null) {
         	action = new DroolsConsequenceAction();
@@ -50,6 +51,8 @@ public class ScriptTaskHandler extends AbstractNodeHandler {
 		String language = element.getAttribute("scriptFormat");
 		if (XmlBPMNProcessDumper.JAVA_LANGUAGE.equals(language)) {
 			action.setDialect(JavaDialect.ID);
+		} else if (XmlBPMNProcessDumper.JAVASCRIPT_LANGUAGE.equals(language)) {
+		    action.setDialect("JavaScript");
 		}
 		action.setConsequence("");
         org.w3c.dom.Node xmlNode = element.getFirstChild();
@@ -58,6 +61,14 @@ public class ScriptTaskHandler extends AbstractNodeHandler {
         		action.setConsequence(xmlNode.getTextContent());
         	}
         	xmlNode = xmlNode.getNextSibling();
+        }
+        
+        String compensation = element.getAttribute("isForCompensation");
+        if( compensation != null ) {
+            boolean isForCompensation = Boolean.parseBoolean(compensation);
+            if( isForCompensation ) { 
+                actionNode.setMetaData("isForCompensation", isForCompensation );
+            }
         }
 	}
 

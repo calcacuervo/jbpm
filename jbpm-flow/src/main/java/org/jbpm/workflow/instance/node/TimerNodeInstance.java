@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,34 +16,26 @@
 
 package org.jbpm.workflow.instance.node;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.drools.RuntimeDroolsException;
-import org.drools.common.InternalKnowledgeRuntime;
-import org.drools.runtime.process.EventListener;
-import org.drools.runtime.process.NodeInstance;
-import org.drools.time.TimeUtils;
-import org.jbpm.process.core.context.variable.VariableScope;
+import org.drools.core.common.InternalKnowledgeRuntime;
 import org.jbpm.process.core.timer.BusinessCalendar;
 import org.jbpm.process.core.timer.Timer;
 import org.jbpm.process.instance.InternalProcessRuntime;
 import org.jbpm.process.instance.ProcessInstance;
-import org.jbpm.process.instance.context.variable.VariableScopeInstance;
 import org.jbpm.process.instance.timer.TimerInstance;
 import org.jbpm.workflow.core.node.TimerNode;
 import org.jbpm.workflow.instance.WorkflowProcessInstance;
-import org.jbpm.workflow.instance.impl.NodeInstanceResolverFactory;
-import org.mvel2.MVEL;
+import org.kie.api.runtime.process.EventListener;
+import org.kie.api.runtime.process.NodeInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TimerNodeInstance extends StateBasedNodeInstance implements EventListener {
 
     private static final long serialVersionUID = 510l;
-    private static final Pattern PARAMETER_MATCHER = Pattern.compile("#\\{(\\S+)\\}", Pattern.DOTALL);
+    private static final Logger logger = LoggerFactory.getLogger(TimerNodeInstance.class);
     
     private long timerId;
+    private TimerInstance timerInstance;
     
     public TimerNode getTimerNode() {
         return (TimerNode) getNode();
@@ -63,13 +55,13 @@ public class TimerNodeInstance extends StateBasedNodeInstance implements EventLi
                 "A TimerNode only accepts default incoming connections!");
         }
         InternalKnowledgeRuntime kruntime =  getProcessInstance().getKnowledgeRuntime();
-        TimerInstance timer = createTimerInstance(kruntime);
+        timerInstance = createTimerInstance(kruntime);
         if (getTimerInstances() == null) {
         	addTimerListener();
         }
         ((InternalProcessRuntime)kruntime.getProcessRuntime())
-        	.getTimerManager().registerTimer(timer, (ProcessInstance) getProcessInstance());
-        timerId = timer.getId();
+        	.getTimerManager().registerTimer(timerInstance, (ProcessInstance) getProcessInstance());
+        timerId = timerInstance.getId();
     }
     
     protected TimerInstance createTimerInstance(InternalKnowledgeRuntime kruntime) {
@@ -90,57 +82,12 @@ public class TimerNodeInstance extends StateBasedNodeInstance implements EventLi
                 timerInstance.setPeriod(businessCalendar.calculateBusinessTimeAsDuration(period));
             }
     	} else {
-    	    timerInstance.setDelay(resolveValue(timer.getDelay()));
-            if (timer.getPeriod() == null) {
-                timerInstance.setPeriod(0);
-            } else {
-                timerInstance.setPeriod(resolveValue(timer.getPeriod()));
-            }
+    	    configureTimerInstance(timer, timerInstance);
     	}
     	timerInstance.setTimerId(timer.getId());
     	return timerInstance;
     }
     
-    private long resolveValue(String s) {
-    	try {
-    		return TimeUtils.parseTimeString(s);
-    	} catch (RuntimeDroolsException e) {
-    		// cannot parse delay, trying to interpret it
-    		s = resolveVariable(s);
-            return TimeUtils.parseTimeString(s);
-    	}
-    }
-
-    private String resolveVariable(String s) {
-        Map<String, String> replacements = new HashMap<String, String>();
-        Matcher matcher = PARAMETER_MATCHER.matcher(s);
-        while (matcher.find()) {
-            String paramName = matcher.group(1);
-            if (replacements.get(paramName) == null) {
-                VariableScopeInstance variableScopeInstance = (VariableScopeInstance)
-                    resolveContextInstance(VariableScope.VARIABLE_SCOPE, paramName);
-                if (variableScopeInstance != null) {
-                    Object variableValue = variableScopeInstance.getVariable(paramName);
-                    String variableValueString = variableValue == null ? "" : variableValue.toString(); 
-                    replacements.put(paramName, variableValueString);
-                } else {
-                    try {
-                        Object variableValue = MVEL.eval(paramName, new NodeInstanceResolverFactory(this));
-                        String variableValueString = variableValue == null ? "" : variableValue.toString();
-                        replacements.put(paramName, variableValueString);
-                    } catch (Throwable t) {
-                        System.err.println("Could not find variable scope for variable " + paramName);
-                        System.err.println("when trying to replace variable in processId for sub process " + getNodeName());
-                        System.err.println("Continuing without setting process id.");
-                    }
-                }
-            }
-        }
-        for (Map.Entry<String, String> replacement: replacements.entrySet()) {
-            s = s.replace("#{" + replacement.getKey() + "}", replacement.getValue());
-        }
-        return s;
-    }
     public void signalEvent(String type, Object event) {
     	if ("timerTriggered".equals(type)) {
     		TimerInstance timer = (TimerInstance) event;
@@ -174,6 +121,10 @@ public class TimerNodeInstance extends StateBasedNodeInstance implements EventLi
     public void removeEventListeners() {
         super.removeEventListeners();
         ((WorkflowProcessInstance) getProcessInstance()).removeEventListener("timerTriggered", this, false);
+    }
+
+    public TimerInstance getTimerInstance() {
+        return timerInstance;
     }
 
 }

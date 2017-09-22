@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +16,10 @@
 
 package org.jbpm.ruleflow.core;
 
-import org.drools.definition.process.Node;
 import org.jbpm.ruleflow.core.factory.ActionNodeFactory;
+import org.jbpm.ruleflow.core.factory.BoundaryEventNodeFactory;
 import org.jbpm.ruleflow.core.factory.CompositeNodeFactory;
+import org.jbpm.ruleflow.core.factory.DynamicNodeFactory;
 import org.jbpm.ruleflow.core.factory.EndNodeFactory;
 import org.jbpm.ruleflow.core.factory.EventNodeFactory;
 import org.jbpm.ruleflow.core.factory.FaultNodeFactory;
@@ -34,6 +35,7 @@ import org.jbpm.ruleflow.core.factory.TimerNodeFactory;
 import org.jbpm.ruleflow.core.factory.WorkItemNodeFactory;
 import org.jbpm.workflow.core.NodeContainer;
 import org.jbpm.workflow.core.impl.ConnectionImpl;
+import org.kie.api.definition.process.Node;
 
 public abstract class RuleFlowNodeContainerFactory {
 
@@ -95,12 +97,20 @@ public abstract class RuleFlowNodeContainerFactory {
         return new EventNodeFactory(this, nodeContainer, id);
     }
 
+    public BoundaryEventNodeFactory boundaryEventNode(long id) {
+        return new BoundaryEventNodeFactory(this, nodeContainer, id);
+    }
+
     public CompositeNodeFactory compositeNode(long id) {
         return new CompositeNodeFactory(this, nodeContainer, id);
     }
 
     public ForEachNodeFactory forEachNode(long id) {
         return new ForEachNodeFactory(this, nodeContainer, id);
+    }
+    
+    public DynamicNodeFactory dynamicNode(long id) {
+        return new DynamicNodeFactory(this, nodeContainer, id);
     }
     
     public WorkItemNodeFactory workItemNode(long id) {

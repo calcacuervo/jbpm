@@ -1,22 +1,41 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.process.workitem;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
+import org.jbpm.process.core.ParameterDefinition;
+import org.jbpm.process.core.datatype.DataType;
+import org.jbpm.process.core.impl.ParameterDefinitionImpl;
 import org.drools.core.util.ConfFileUtils;
-import org.drools.process.core.ParameterDefinition;
-import org.drools.process.core.datatype.DataType;
-import org.drools.process.core.impl.ParameterDefinitionImpl;
-import org.mvel2.MVEL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.jbpm.util.WidMVELEvaluator;
 
 public class WorkItemRepository {
 
+    private static final Logger logger = LoggerFactory.getLogger(WorkItemRepository.class);
+
 	public static Map<String, WorkDefinitionImpl> getWorkDefinitions(String path) {
+		return getWorkDefinitions(path, null);
+	}
+
+	public static Map<String, WorkDefinitionImpl> getWorkDefinitions(String path, String[] definitionNames) {
 		Map<String, WorkDefinitionImpl> workDefinitions = new HashMap<String, WorkDefinitionImpl>();
 		List<Map<String, Object>> workDefinitionsMaps = getAllWorkDefinitionsMap(path);
 		for (Map<String, Object> workDefinitionMap : workDefinitionsMaps) {
@@ -38,6 +57,12 @@ public class WorkItemRepository {
 					}
 				}
 				workDefinition.setParameters(parameters);
+
+
+				if(workDefinitionMap.get("parameterValues") != null) {
+					workDefinition.setParameterValues( (Map<String, Object>) workDefinitionMap.get("parameterValues") );
+				}
+
 				Set<ParameterDefinition> results = new HashSet<ParameterDefinition>();
 				Map<String, DataType> resultMap = (Map<String, DataType>) workDefinitionMap.get("results");
 				if (resultMap != null) {
@@ -46,10 +71,40 @@ public class WorkItemRepository {
 					}
 				}
 				workDefinition.setResults(results);
+
 				workDefinition.setDefaultHandler((String) workDefinitionMap.get("defaultHandler"));
-				workDefinition.setDependencies(((List<String>) workDefinitionMap.get("dependencies")).toArray(new String[0]));
+
+				if(workDefinitionMap.get("dependencies") != null) {
+					workDefinition.setDependencies(((List<String>) workDefinitionMap.get("dependencies")).toArray(new String[0]));
+				}
+
+				if(workDefinitionMap.get("mavenDependencies") != null) {
+					workDefinition.setMavenDependencies(((List<String>) workDefinitionMap.get("mavenDependencies")).toArray(new String[0]));
+				}
+
+				if(workDefinitionMap.get("version") != null) {
+					workDefinition.setVersion((String) workDefinitionMap.get("version"));
+				}
+
+				if(workDefinitionMap.get("description") != null) {
+					workDefinition.setDescription((String) workDefinitionMap.get("description"));
+				}
+
+				if(workDefinitionMap.get("widType") != null) {
+					workDefinition.setWidType((String) workDefinitionMap.get("widType"));
+				}
+
 				workDefinitions.put(workDefinition.getName(), workDefinition);
 			}
+		}
+
+		if(definitionNames!= null) {
+			if(definitionNames.length > 0) {
+				workDefinitions.keySet().retainAll(new HashSet(Arrays.asList(definitionNames)));
+			} else {
+				return new HashMap<String, WorkDefinitionImpl>();
+			}
+
 		}
 		return workDefinitions;
 	}
@@ -90,19 +145,30 @@ public class WorkItemRepository {
 			// Do nothing
 		}
 		if (content == null) {
-			return new ArrayList<Map<String, Object>>();
+			return new ArrayList();
 		}
 		try {
-			List<Map<String, Object>> result = (List<Map<String, Object>>) MVEL.eval(content, new HashMap());
+			List<Map<String, Object>> result = (List<Map<String, Object>>) WidMVELEvaluator.eval(content);
 			for (Map<String, Object> wid: result) {
 				wid.put("path", parentPath + "/" + file);
 				wid.put("file", file + ".wid");
+				wid.put("widType", "mvel");
 			}
 			return result;
 		} catch (Throwable t) {
-			System.err.println("Error occured while loading work definitions " + path);
-			t.printStackTrace();
-			throw new RuntimeException("Could not parse work definitions " + path + ": " + t.getMessage());
+			logger.warn("Could not parse work definition as mvel. Trying as json.");
+			try {
+				List<Map<String, Object>> result = JsonWorkItemParser.parse(content);
+				for (Map<String, Object> wid: result) {
+					wid.put("path", parentPath + "/" + file);
+					wid.put("file", file + ".wid");
+					wid.put("widType", "json");
+				}
+				return result;
+			} catch( Throwable tt) {
+				logger.error("Error occured while loading work definitions " + path, tt);
+				throw new RuntimeException("Could not parse work definitions " + path + ": " + tt.getMessage());
+			}
 		}
 	}
 

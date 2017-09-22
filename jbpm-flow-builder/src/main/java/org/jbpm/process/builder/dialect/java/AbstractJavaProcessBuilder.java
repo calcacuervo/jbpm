@@ -1,17 +1,36 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.process.builder.dialect.java;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.drools.compiler.compiler.AnalysisResult;
+import org.drools.compiler.lang.descr.BaseDescr;
+import org.drools.compiler.rule.builder.dialect.java.JavaAnalysisResult;
+import org.drools.compiler.rule.builder.dialect.java.parser.JavaLocalDeclarationDescr;
 import org.drools.core.util.StringUtils;
-import org.drools.lang.descr.BaseDescr;
 import org.jbpm.process.builder.ProcessBuildContext;
 import org.jbpm.process.core.ContextResolver;
 import org.jbpm.process.core.context.variable.VariableScope;
-import org.mvel2.ParserContext;
 import org.mvel2.integration.impl.MapVariableResolverFactory;
 import org.mvel2.templates.SimpleTemplateRegistry;
 import org.mvel2.templates.TemplateCompiler;
@@ -109,7 +128,7 @@ public class AbstractJavaProcessBuilder {
     	return map;
     }
 
-    public void generatTemplates(final String ruleTemplate,
+    public void generateTemplates(final String ruleTemplate,
                                  final String invokerTemplate,
                                  final ProcessBuildContext context,
                                  final String className,
@@ -118,7 +137,7 @@ public class AbstractJavaProcessBuilder {
                                  final BaseDescr descrLookup) {
         TemplateRegistry registry = getRuleTemplateRegistry();
 
-        context.getMethods().add(
+        context.getMethods().add((String)
                 TemplateRuntime.execute(registry.getNamedTemplate(ruleTemplate), null, new MapVariableResolverFactory(vars), registry)
         );
 
@@ -129,9 +148,34 @@ public class AbstractJavaProcessBuilder {
                 (String)TemplateRuntime.execute(registry.getNamedTemplate(invokerTemplate), null, new MapVariableResolverFactory(vars), registry)
         );
 
-        context.getInvokerLookups().put(invokerClassName,
-                invokerLookup);
-        context.getDescrLookups().put(invokerClassName,
-                descrLookup);
+        context.addInvokerLookup(invokerClassName, invokerLookup);
+        context.addDescrLookups(invokerClassName, descrLookup);
+    }
+    
+    protected void collectTypes(String key, AnalysisResult analysis, ProcessBuildContext context) {
+        if (context.getProcess() != null) {
+            Set<String> referencedTypes = new HashSet<String>();
+            Set<String> unqualifiedClasses = new HashSet<String>();
+            
+            JavaAnalysisResult javaAnalysis = (JavaAnalysisResult) analysis;
+            LOCAL_VAR: for( JavaLocalDeclarationDescr localDeclDescr : javaAnalysis.getLocalVariablesMap().values() ) { 
+                String type = localDeclDescr.getRawType();
+                 
+                if( type.contains(".") ) { 
+                    referencedTypes.add(type);
+                } else { 
+                    for( String alreadyRefdType : referencedTypes ) { 
+                        String alreadyRefdSimpleName = alreadyRefdType.substring(alreadyRefdType.lastIndexOf(".") + 1);
+                       if( type.equals(alreadyRefdSimpleName) ) { 
+                           continue LOCAL_VAR;
+                       }
+                    }
+                    unqualifiedClasses.add(type);
+                }
+            }
+        
+            context.getProcess().getMetaData().put(key + "ReferencedTypes", referencedTypes);
+            context.getProcess().getMetaData().put(key + "UnqualifiedTypes", unqualifiedClasses);
+        }
     }
 }

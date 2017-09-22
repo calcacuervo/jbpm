@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,26 +16,27 @@
 
 package org.jbpm.process.instance.impl;
 
+import org.drools.core.base.mvel.MVELCompilationUnit;
+import org.drools.core.base.mvel.MVELCompileable;
+import org.drools.core.common.InternalWorkingMemory;
+import org.drools.core.definitions.impl.KnowledgePackageImpl;
+import org.drools.core.definitions.rule.impl.RuleImpl;
+import org.drools.core.impl.StatefulKnowledgeSessionImpl;
+import org.drools.core.impl.StatelessKnowledgeSessionImpl;
+import org.drools.core.rule.MVELDialectRuntimeData;
+import org.drools.core.spi.GlobalResolver;
+import org.drools.core.util.MVELSafeHelper;
+import org.kie.api.definition.KiePackage;
+import org.kie.api.runtime.process.ProcessContext;
+import org.kie.internal.runtime.StatefulKnowledgeSession;
+import org.kie.internal.runtime.StatelessKnowledgeSession;
+import org.mvel2.integration.VariableResolverFactory;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-
-import org.drools.base.mvel.MVELCompilationUnit;
-import org.drools.base.mvel.MVELCompileable;
-import org.drools.common.InternalWorkingMemory;
-import org.drools.definition.KnowledgePackage;
-import org.drools.definitions.impl.KnowledgePackageImp;
-import org.drools.impl.StatefulKnowledgeSessionImpl;
-import org.drools.impl.StatelessKnowledgeSessionImpl;
-import org.drools.rule.MVELDialectRuntimeData;
-import org.drools.runtime.StatefulKnowledgeSession;
-import org.drools.runtime.StatelessKnowledgeSession;
-import org.drools.runtime.process.ProcessContext;
-import org.drools.spi.GlobalResolver;
-import org.mvel2.MVEL;
-import org.mvel2.integration.VariableResolverFactory;
 
 public class MVELReturnValueEvaluator
     implements
@@ -73,6 +74,10 @@ public class MVELReturnValueEvaluator
         expr = unit.getCompiledExpression( data );
     }
 
+    public void compile(MVELDialectRuntimeData data, RuleImpl rule) {
+        expr = unit.getCompiledExpression( data );
+    }
+
     public String getDialect() {
         return this.id;
     }
@@ -87,11 +92,11 @@ public class MVELReturnValueEvaluator
         }
 
         InternalWorkingMemory internalWorkingMemory = null;
-        if( context.getKnowledgeRuntime() instanceof StatefulKnowledgeSessionImpl ) { 
-            internalWorkingMemory = ((StatefulKnowledgeSessionImpl) context.getKnowledgeRuntime()).session;
-        } else if( context.getKnowledgeRuntime() instanceof StatelessKnowledgeSession ) { 
-            StatefulKnowledgeSession statefulKnowledgeSession = ((StatelessKnowledgeSessionImpl) context.getKnowledgeRuntime()).newWorkingMemory();
-            internalWorkingMemory = ((StatefulKnowledgeSessionImpl) statefulKnowledgeSession).session;
+        if( context.getKieRuntime() instanceof StatefulKnowledgeSessionImpl ) {
+            internalWorkingMemory = ((StatefulKnowledgeSessionImpl) context.getKieRuntime()).getInternalWorkingMemory();
+        } else if( context.getKieRuntime() instanceof StatelessKnowledgeSession) {
+            StatefulKnowledgeSession statefulKnowledgeSession = ((StatelessKnowledgeSessionImpl) context.getKieRuntime()).newWorkingMemory();
+            internalWorkingMemory = ((StatefulKnowledgeSessionImpl) statefulKnowledgeSession).getInternalWorkingMemory();
         }
         
         VariableResolverFactory factory 
@@ -102,16 +107,16 @@ public class MVELReturnValueEvaluator
                                null, // No (left) tuples
                                vars, 
                                internalWorkingMemory,
-                               (GlobalResolver) context.getKnowledgeRuntime().getGlobals() );
+                               (GlobalResolver) context.getKieRuntime().getGlobals() );
 
         // do we have any functions for this namespace?
-        KnowledgePackage pkg = context.getKnowledgeRuntime().getKnowledgeBase().getKnowledgePackage( "MAIN" );
-        if ( pkg != null && pkg instanceof KnowledgePackageImp) {
-            MVELDialectRuntimeData data = ( MVELDialectRuntimeData ) ((KnowledgePackageImp) pkg).pkg.getDialectRuntimeRegistry().getDialectData( id );
+        KiePackage pkg = context.getKieRuntime().getKieBase().getKiePackage("MAIN");
+        if ( pkg instanceof KnowledgePackageImpl) {
+            MVELDialectRuntimeData data = ( MVELDialectRuntimeData ) ((KnowledgePackageImpl) pkg).getDialectRuntimeRegistry().getDialectData( id );
             factory.setNextFactory( data.getFunctionFactory() );
         }
 
-        Object value = MVEL.executeExpression( this.expr,
+        Object value = MVELSafeHelper.getEvaluator().executeExpression( this.expr,
 	                                           null,
 	                                           factory );
 

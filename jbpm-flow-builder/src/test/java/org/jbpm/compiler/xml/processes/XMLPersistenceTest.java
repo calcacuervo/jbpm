@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,6 @@
 
 package org.jbpm.compiler.xml.processes;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,28 +24,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.drools.definition.process.Process;
-import org.drools.process.core.ParameterDefinition;
-import org.drools.process.core.Work;
-import org.drools.process.core.datatype.impl.type.IntegerDataType;
-import org.drools.process.core.datatype.impl.type.ListDataType;
-import org.drools.process.core.datatype.impl.type.ObjectDataType;
-import org.drools.process.core.datatype.impl.type.StringDataType;
-import org.drools.process.core.impl.ParameterDefinitionImpl;
-import org.drools.process.core.impl.WorkImpl;
-import org.drools.xml.SemanticModules;
-import org.jbpm.JbpmTestCase;
-import org.jbpm.Person;
+import org.custommonkey.xmlunit.Diff;
+import org.custommonkey.xmlunit.ElementNameAndAttributeQualifier;
+import org.custommonkey.xmlunit.XMLTestCase;
+import org.custommonkey.xmlunit.XMLUnit;
+import org.drools.core.xml.SemanticModules;
 import org.jbpm.compiler.xml.ProcessSemanticModule;
 import org.jbpm.compiler.xml.XmlProcessReader;
 import org.jbpm.compiler.xml.XmlRuleFlowProcessDumper;
+import org.jbpm.integrationtests.test.Person;
+import org.jbpm.process.core.ParameterDefinition;
+import org.jbpm.process.core.Work;
 import org.jbpm.process.core.context.exception.ActionExceptionHandler;
 import org.jbpm.process.core.context.exception.ExceptionScope;
 import org.jbpm.process.core.context.swimlane.Swimlane;
 import org.jbpm.process.core.context.variable.Variable;
 import org.jbpm.process.core.context.variable.VariableScope;
+import org.jbpm.process.core.datatype.impl.type.IntegerDataType;
+import org.jbpm.process.core.datatype.impl.type.ListDataType;
+import org.jbpm.process.core.datatype.impl.type.ObjectDataType;
+import org.jbpm.process.core.datatype.impl.type.StringDataType;
 import org.jbpm.process.core.event.EventTypeFilter;
+import org.jbpm.process.core.impl.ParameterDefinitionImpl;
+import org.jbpm.process.core.impl.WorkImpl;
 import org.jbpm.process.core.timer.Timer;
+import org.jbpm.process.instance.impl.util.LoggingPrintStream;
 import org.jbpm.ruleflow.core.RuleFlowProcess;
 import org.jbpm.workflow.core.Connection;
 import org.jbpm.workflow.core.Constraint;
@@ -76,14 +77,30 @@ import org.jbpm.workflow.core.node.StateNode;
 import org.jbpm.workflow.core.node.SubProcessNode;
 import org.jbpm.workflow.core.node.TimerNode;
 import org.jbpm.workflow.core.node.WorkItemNode;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.kie.api.definition.process.Process;
+import org.w3c.dom.Document;
 
-public class XMLPersistenceTest extends JbpmTestCase {
+public class XMLPersistenceTest extends XMLTestCase {
+   
+    @BeforeClass
+    public static void configure() { 
+        LoggingPrintStream.interceptSysOutSysErr();
+    }
     
+    @AfterClass
+    public static void reset() { 
+        LoggingPrintStream.resetInterceptSysOutSysErr();
+    }
+    
+    @Test
     public void testPersistenceOfEmptyNodes() throws Exception {
         RuleFlowProcess process = new RuleFlowProcess() {
             private static final long serialVersionUID = 510l;
             int id = 0;
-            public void addNode(org.drools.definition.process.Node node) {
+            public void addNode(org.kie.api.definition.process.Node node) {
                 ((Node) node).setId(++id);
                 super.addNode(node);
             }
@@ -110,9 +127,7 @@ public class XMLPersistenceTest extends JbpmTestCase {
         if (xml == null) {
             throw new IllegalArgumentException("Failed to persist empty nodes!");
         }
-        
-        System.out.println(xml);
-        System.out.println("-------------------");
+
         
         SemanticModules modules = new SemanticModules();
         modules.addSemanticModule(new ProcessSemanticModule());
@@ -130,24 +145,24 @@ public class XMLPersistenceTest extends JbpmTestCase {
         if (xml2 == null) {
             throw new IllegalArgumentException("Failed to persist empty nodes!");
         }
-        
-        System.out.println(xml2);
-        
+       
+        assertXMLEqual(xml, xml2);
 //        assertEquals(xml, xml2);
     }
 
+    @Test
     public void testPersistenceOfFullNodes() throws Exception {
         RuleFlowProcess process = new RuleFlowProcess() {
             private static final long serialVersionUID = 510l;
             int id = 0;
-            public void addNode(org.drools.definition.process.Node node) {
+            public void addNode(org.kie.api.definition.process.Node node) {
                 ((Node) node).setId(++id);
                 super.addNode(node);
             }
         };
         process.setMetaData("routerLayout", 1);
         
-        List<String> imports = new ArrayList<String>();
+        Set<String> imports = new HashSet<String>();
         imports.add("import1");
         imports.add("import2");
         process.setImports(imports);
@@ -170,7 +185,7 @@ public class XMLPersistenceTest extends JbpmTestCase {
         variables.add(variable);
         variable = new Variable();
         variable.setName("variable3");
-        variable.setType(new ObjectDataType("org.jbpm.Person"));
+        variable.setType(new ObjectDataType("org.jbpm.integrationtests.test.Person"));
         Person person = new Person();
         person.setName("John");
         variable.setValue(person);
@@ -542,7 +557,6 @@ public class XMLPersistenceTest extends JbpmTestCase {
             throw new IllegalArgumentException("Failed to persist full nodes!");
         }
         
-        System.out.println(xml);
         
         SemanticModules modules = new SemanticModules();
         modules.addSemanticModule(new ProcessSemanticModule());
@@ -562,22 +576,23 @@ public class XMLPersistenceTest extends JbpmTestCase {
         assertEquals(2, process.getSwimlaneContext().getSwimlanes().size());
         assertEquals(2, process.getExceptionScope().getExceptionHandlers().size());
         
-        System.out.println("************************************");
         
         String xml2 = XmlRuleFlowProcessDumper.INSTANCE.dump(process, true);
         if (xml2 == null) {
             throw new IllegalArgumentException("Failed to persist empty nodes!");
-        }
-        
-        System.out.println(xml2);
-        
-        assertEquals(xml, xml2);
-        
-        // test serialization of process elements
-        new ObjectOutputStream(new ByteArrayOutputStream()).writeObject(process);
-    }
+        }       
     
+        Document control = XMLUnit.buildDocument(XMLUnit.newControlParser(), new StringReader(xml));
+        Document test = XMLUnit.buildDocument(XMLUnit.newTestParser(), new StringReader(xml2));
+        Diff diff = new Diff(control, test, null, new ElementNameAndAttributeQualifier("name"));
+    
+        assertTrue( diff.toString(), diff.similar() );
+        // test serialization of process elements
+        
+    }
+   
     public void testSpecialCharacters() {
         // TODO
     }
+    
 }

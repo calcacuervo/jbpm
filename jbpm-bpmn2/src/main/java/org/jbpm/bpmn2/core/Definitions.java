@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,7 @@
 package org.jbpm.bpmn2.core;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.*;
 
 public class Definitions implements Serializable {
 	
@@ -26,6 +26,7 @@ public class Definitions implements Serializable {
 	private String targetNamespace;
 	private List<DataStore> dataStores;
 	private List<Association> associations;
+	private List<Error> errors;
 
 	public String getTargetNamespace() {
 		return targetNamespace;
@@ -50,4 +51,12 @@ public class Definitions implements Serializable {
 	public List<Association> getAssociations() {
 		return this.associations;
 	}
+
+    public List<Error> getErrors() {
+        return errors;
+    }
+
+    public void setErrors(List<Error> errors) {
+        this.errors = errors;
+    }
 }

@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,18 +33,24 @@ public class JoinHandler extends AbstractNodeHandler {
 
 	public void writeNode(Node node, StringBuilder xmlDump, int metaDataType) {
 		Join join = (Join) node;
+		String type = null;
 		switch (join.getType()) {
 			case Join.TYPE_AND:
-				writeNode("parallelGateway", node, xmlDump, metaDataType);
+				type = "parallelGateway";
 				break;
 			case Join.TYPE_XOR:
-				writeNode("exclusiveGateway", node, xmlDump, metaDataType);
+				type = "exclusiveGateway";
 				break;
+			case Join.TYPE_OR:
+                type = "inclusiveGateway";
+                break;
 			default:
-				writeNode("complexGateway", node, xmlDump, metaDataType);
+				type = "complexGateway";
 		}
-		xmlDump.append("gatewayDirection=\"Converging\" ");
-		endNode(xmlDump);
+		writeNode(type, node, xmlDump, metaDataType);
+		xmlDump.append("gatewayDirection=\"Converging\" >" + EOL);
+        writeExtensionElements(join, xmlDump);
+		endNode(type, xmlDump);
 	}
 
 }

@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,22 +16,23 @@
 
 package org.jbpm.workflow.instance.node;
 
-import java.io.Serializable;
+import static org.jbpm.workflow.instance.impl.DummyEventListener.EMPTY_EVENT_LISTENER;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.drools.definition.process.Connection;
-import org.drools.definition.process.Node;
-import org.drools.definition.process.NodeContainer;
-import org.drools.runtime.process.EventListener;
 import org.jbpm.process.instance.ProcessInstance;
-import org.jbpm.process.instance.impl.ProcessInstanceImpl;
+import org.jbpm.workflow.core.node.AsyncEventNode;
 import org.jbpm.workflow.core.node.CompositeNode;
 import org.jbpm.workflow.core.node.EventNode;
 import org.jbpm.workflow.core.node.EventNodeInterface;
+import org.jbpm.workflow.core.node.EventSubProcessNode;
 import org.jbpm.workflow.core.node.StartNode;
 import org.jbpm.workflow.instance.NodeInstance;
 import org.jbpm.workflow.instance.NodeInstanceContainer;
@@ -39,53 +40,87 @@ import org.jbpm.workflow.instance.WorkflowProcessInstance;
 import org.jbpm.workflow.instance.impl.NodeInstanceFactory;
 import org.jbpm.workflow.instance.impl.NodeInstanceFactoryRegistry;
 import org.jbpm.workflow.instance.impl.NodeInstanceImpl;
+import org.jbpm.workflow.instance.impl.WorkflowProcessInstanceImpl;
+import org.kie.api.definition.process.Connection;
+import org.kie.api.definition.process.Node;
+import org.kie.api.definition.process.NodeContainer;
 
 /**
  * Runtime counterpart of a composite node.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public class CompositeNodeInstance extends StateBasedNodeInstance implements NodeInstanceContainer, EventNodeInstanceInterface, EventBasedNodeInstanceInterface {
 
     private static final long serialVersionUID = 510l;
-    
-    private final List<NodeInstance> nodeInstances = new ArrayList<NodeInstance>();;
-    private long nodeInstanceCounter = 0;
+
+    private final List<NodeInstance> nodeInstances = new ArrayList<NodeInstance>();
+
+    private AtomicLong singleNodeInstanceCounter = null; // set during NodeInstance creation (*NodeFactory)
     private int state = ProcessInstance.STATE_ACTIVE;
-    
+    private Map<String, Integer> iterationLevels = new HashMap<String, Integer>();
+    private int currentLevel;
+
+    @Override
+    public int getLevelForNode(String uniqueID) {
+        if ("true".equalsIgnoreCase(System.getProperty("jbpm.loop.level.disabled"))) {
+            return 1;
+        }
+        Integer value = iterationLevels.get(uniqueID);
+        if (value == null && currentLevel == 0) {
+           value = new Integer(1);
+        } else if ((value == null && currentLevel > 0) || (value != null && currentLevel > 0 && value > currentLevel)) {
+            value = new Integer(currentLevel);
+        } else {
+            value++;
+        }
+
+        iterationLevels.put(uniqueID, value);
+        return value;
+    }
+
     public void setProcessInstance(WorkflowProcessInstance processInstance) {
     	super.setProcessInstance(processInstance);
+    	this.singleNodeInstanceCounter = ((WorkflowProcessInstanceImpl) processInstance).internalGetNodeInstanceCounter();
     	registerExternalEventNodeListeners();
     }
-    
+
     private void registerExternalEventNodeListeners() {
     	for (Node node: getCompositeNode().getNodes()) {
 			if (node instanceof EventNode) {
 				if ("external".equals(((EventNode) node).getScope())) {
 					getProcessInstance().addEventListener(
-						((EventNode) node).getType(), new DoNothingEventListener(), true);
+						((EventNode) node).getType(), EMPTY_EVENT_LISTENER,  true);
 				}
-			}
+			} else if (node instanceof EventSubProcessNode) {
+                List<String> events = ((EventSubProcessNode) node).getEvents();
+                for (String type : events) {
+                    getProcessInstance().addEventListener(type, EMPTY_EVENT_LISTENER, true);
+                }
+            }
     	}
     }
-    
+
     protected CompositeNode getCompositeNode() {
         return (CompositeNode) getNode();
     }
-    
+
     public NodeContainer getNodeContainer() {
         return getCompositeNode();
     }
-    
-    public void internalTrigger(final org.drools.runtime.process.NodeInstance from, String type) {
+
+    public void internalTrigger(final org.kie.api.runtime.process.NodeInstance from, String type) {
     	super.internalTrigger(from, type);
+    	// if node instance was cancelled, abort
+		if (getNodeInstanceContainer().getNodeInstance(getId()) == null) {
+			return;
+		}
         CompositeNode.NodeAndType nodeAndType = getCompositeNode().internalGetLinkedIncomingNode(type);
         if (nodeAndType != null) {
 	        List<Connection> connections = nodeAndType.getNode().getIncomingConnections(nodeAndType.getType());
 	        for (Iterator<Connection> iterator = connections.iterator(); iterator.hasNext(); ) {
 	            Connection connection = iterator.next();
 	            if ((connection.getFrom() instanceof CompositeNode.CompositeNodeStart) &&
-	            		(from == null || 
+	            		(from == null ||
 	    				((CompositeNode.CompositeNodeStart) connection.getFrom()).getInNode().getId() == from.getNodeId())) {
 	                NodeInstance nodeInstance = getNodeInstance(connection.getFrom());
 	                ((org.jbpm.workflow.instance.NodeInstance) nodeInstance).trigger(null, nodeAndType.getType());
@@ -115,13 +150,18 @@ public class CompositeNodeInstance extends StateBasedNodeInstance implements Nod
 	            "Could not find start for composite node: " + type);
         }
     }
-    
+
+    protected void internalTriggerOnlyParent(final org.kie.api.runtime.process.NodeInstance from, String type) {
+        super.internalTrigger(from, type);
+    }
+
     protected boolean isLinkedIncomingNodeRequired() {
     	return true;
     }
 
     public void triggerCompleted(String outType) {
     	boolean cancelRemainingInstances = getCompositeNode().isCancelRemainingInstances();
+    	((org.jbpm.workflow.instance.NodeInstanceContainer)getNodeInstanceContainer()).setCurrentLevel(getLevel());
         triggerCompleted(outType, cancelRemainingInstances);
         if (cancelRemainingInstances) {
 	        while (!nodeInstances.isEmpty()) {
@@ -138,9 +178,14 @@ public class CompositeNodeInstance extends StateBasedNodeInstance implements Nod
         }
         super.cancel();
     }
-    
+
     public void addNodeInstance(final NodeInstance nodeInstance) {
-        ((NodeInstanceImpl) nodeInstance).setId(nodeInstanceCounter++);
+        if (nodeInstance.getId() == -1) {
+            // assign new id only if it does not exist as it might already be set by marshalling 
+            // it's important to keep same ids of node instances as they might be references e.g. exclusive group
+            long id = singleNodeInstanceCounter.incrementAndGet();        
+            ((NodeInstanceImpl) nodeInstance).setId(id);
+        }
         this.nodeInstances.add(nodeInstance);
     }
 
@@ -148,10 +193,10 @@ public class CompositeNodeInstance extends StateBasedNodeInstance implements Nod
         this.nodeInstances.remove(nodeInstance);
     }
 
-    public Collection<org.drools.runtime.process.NodeInstance> getNodeInstances() {
-        return new ArrayList<org.drools.runtime.process.NodeInstance>(getNodeInstances(false));
+    public Collection<org.kie.api.runtime.process.NodeInstance> getNodeInstances() {
+        return new ArrayList<org.kie.api.runtime.process.NodeInstance>(getNodeInstances(false));
     }
-    
+
     public Collection<NodeInstance> getNodeInstances(boolean recursive) {
         Collection<NodeInstance> result = nodeInstances;
         if (recursive) {
@@ -176,16 +221,25 @@ public class CompositeNodeInstance extends StateBasedNodeInstance implements Nod
 		return null;
 	}
 
+	public NodeInstance getNodeInstance(long nodeInstanceId, boolean recursive) {
+		for (NodeInstance nodeInstance: getNodeInstances(recursive)) {
+			if (nodeInstance.getId() == nodeInstanceId) {
+				return nodeInstance;
+			}
+		}
+		return null;
+	}
+
     public NodeInstance getFirstNodeInstance(final long nodeId) {
         for ( final Iterator<NodeInstance> iterator = this.nodeInstances.iterator(); iterator.hasNext(); ) {
             final NodeInstance nodeInstance = iterator.next();
-            if ( nodeInstance.getNodeId() == nodeId ) {
+            if ( nodeInstance.getNodeId() == nodeId && nodeInstance.getLevel() == getCurrentLevel()) {
                 return nodeInstance;
             }
         }
         return null;
     }
-    
+
     public NodeInstance getNodeInstance(final Node node) {
         // TODO do this cleaner for start / end of composite?
         if (node instanceof CompositeNode.CompositeNodeStart) {
@@ -201,19 +255,28 @@ public class CompositeNodeInstance extends StateBasedNodeInstance implements Nod
             nodeInstance.setProcessInstance(getProcessInstance());
             return nodeInstance;
         }
-        
-        NodeInstanceFactory conf = NodeInstanceFactoryRegistry.INSTANCE.getProcessNodeInstanceFactory(node);
+        Node actualNode = node;
+        // async continuation handling
+        if (node instanceof AsyncEventNode) {
+            actualNode = ((AsyncEventNode) node).getActualNode();
+        } else if (useAsync(node)) {
+            actualNode = new AsyncEventNode(node);
+        }
+
+        NodeInstanceFactory conf = NodeInstanceFactoryRegistry.getInstance(getProcessInstance().getKnowledgeRuntime().getEnvironment()).getProcessNodeInstanceFactory(actualNode);
         if (conf == null) {
             throw new IllegalArgumentException("Illegal node type: " + node.getClass());
         }
-        NodeInstanceImpl nodeInstance = (NodeInstanceImpl) conf.getNodeInstance(node, getProcessInstance(), this);
+        NodeInstanceImpl nodeInstance = (NodeInstanceImpl) conf.getNodeInstance(actualNode, getProcessInstance(), this);
         if (nodeInstance == null) {
             throw new IllegalArgumentException("Illegal node type: " + node.getClass());
         }
         return nodeInstance;
     }
 
+    @Override
 	public void signalEvent(String type, Object event) {
+		List<NodeInstance> currentView = new ArrayList<NodeInstance>(this.nodeInstances);
 		super.signalEvent(type, event);
 		for (Node node: getCompositeNode().internalGetNodes()) {
 			if (node instanceof EventNodeInterface) {
@@ -221,8 +284,11 @@ public class CompositeNodeInstance extends StateBasedNodeInstance implements Nod
 					if (node instanceof EventNode && ((EventNode) node).getFrom() == null) {
 						EventNodeInstanceInterface eventNodeInstance = (EventNodeInstanceInterface) getNodeInstance(node);
 						eventNodeInstance.signalEvent(type, event);
+					} else if( node instanceof EventSubProcessNode ) {
+					    EventNodeInstanceInterface eventNodeInstance = (EventNodeInstanceInterface) getNodeInstance(node);
+					    eventNodeInstance.signalEvent(type, event);
 					} else {
-						List<NodeInstance> nodeInstances = getNodeInstances(node.getId());
+						List<NodeInstance> nodeInstances = getNodeInstances(node.getId(), currentView);
 						if (nodeInstances != null && !nodeInstances.isEmpty()) {
 							for (NodeInstance nodeInstance : nodeInstances) {
 								((EventNodeInstanceInterface) nodeInstance)
@@ -247,6 +313,18 @@ public class CompositeNodeInstance extends StateBasedNodeInstance implements Nod
 		return result;
 	}
 
+	public List<NodeInstance> getNodeInstances(final long nodeId, List<NodeInstance> currentView) {
+		List<NodeInstance> result = new ArrayList<NodeInstance>();
+		for (final Iterator<NodeInstance> iterator = currentView
+				.iterator(); iterator.hasNext();) {
+			final NodeInstance nodeInstance = iterator.next();
+			if (nodeInstance.getNodeId() == nodeId) {
+				result.add(nodeInstance);
+			}
+		}
+		return result;
+	}
+
     public class CompositeNodeStartInstance extends NodeInstanceImpl {
 
         private static final long serialVersionUID = 510l;
@@ -254,15 +332,15 @@ public class CompositeNodeInstance extends StateBasedNodeInstance implements Nod
         public CompositeNode.CompositeNodeStart getCompositeNodeStart() {
             return (CompositeNode.CompositeNodeStart) getNode();
         }
-        
-        public void internalTrigger(org.drools.runtime.process.NodeInstance from, String type) {
+
+        public void internalTrigger(org.kie.api.runtime.process.NodeInstance from, String type) {
             triggerCompleted();
         }
-        
+
         public void triggerCompleted() {
             triggerCompleted(org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE, true);
         }
-        
+
     }
 
     public class CompositeNodeEndInstance extends NodeInstanceImpl {
@@ -272,16 +350,16 @@ public class CompositeNodeInstance extends StateBasedNodeInstance implements Nod
         public CompositeNode.CompositeNodeEnd getCompositeNodeEnd() {
             return (CompositeNode.CompositeNodeEnd) getNode();
         }
-        
-        public void internalTrigger(org.drools.runtime.process.NodeInstance from, String type) {
+
+        public void internalTrigger(org.kie.api.runtime.process.NodeInstance from, String type) {
             triggerCompleted();
         }
-        
+
         public void triggerCompleted() {
             CompositeNodeInstance.this.triggerCompleted(
                 getCompositeNodeEnd().getOutType());
         }
-        
+
     }
 
 	public void addEventListeners() {
@@ -303,8 +381,16 @@ public class CompositeNodeInstance extends StateBasedNodeInstance implements Nod
 	}
 
 	public void nodeInstanceCompleted(NodeInstance nodeInstance, String outType) {
-	    if (nodeInstance instanceof EndNodeInstance) {
-            if (((org.jbpm.workflow.core.WorkflowProcess) getProcessInstance().getProcess()).isAutoComplete()) {
+	    Node nodeInstanceNode = nodeInstance.getNode();
+	    if( nodeInstanceNode != null ) {
+	        Object compensationBoolObj =  nodeInstanceNode.getMetaData().get("isForCompensation");
+	        boolean isForCompensation = compensationBoolObj == null ? false : ((Boolean) compensationBoolObj);
+	        if( isForCompensation ) {
+	            return;
+	        }
+	    }
+	    if (nodeInstance instanceof EndNodeInstance || nodeInstance instanceof EventSubProcessNodeInstance ) {
+            if (getCompositeNode().isAutoComplete()) {
                 if (nodeInstances.isEmpty()) {
                     triggerCompleted(
                         org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE);
@@ -315,22 +401,40 @@ public class CompositeNodeInstance extends StateBasedNodeInstance implements Nod
     			"Completing a node instance that has no outgoing connection not supported.");
 	    }
 	}
-	
-	private static final class DoNothingEventListener implements EventListener, Serializable {
-		private static final long serialVersionUID = 5L;
-		public String[] getEventTypes() {
-			return null;
-		}
-		public void signalEvent(String type, Object event) {
-		}
-	}
-    
+
     public void setState(final int state) {
         this.state = state;
+        if (state == ProcessInstance.STATE_ABORTED) {
+            cancel();
+        }
     }
 
     public int getState() {
         return this.state;
+    }
+
+    public int getCurrentLevel() {
+        return currentLevel;
+    }
+
+    public void setCurrentLevel(int currentLevel) {
+        this.currentLevel = currentLevel;
+    }
+
+    public Map<String, Integer> getIterationLevels() {
+        return iterationLevels;
+    }
+
+    protected boolean useAsync(final Node node) {
+        if (node instanceof StartNode) {
+            return false;
+        }
+        boolean asyncMode = Boolean.parseBoolean((String)node.getMetaData().get("customAsync"));
+        if (asyncMode) {
+            return asyncMode;
+        }
+        
+        return Boolean.parseBoolean((String)getProcessInstance().getKnowledgeRuntime().getEnvironment().get("AsyncMode"));
     }
 
 }

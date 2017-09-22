@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,8 @@
 package org.jbpm.bpmn2.core;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SequenceFlow implements Serializable {
 
@@ -31,6 +33,7 @@ public class SequenceFlow implements Serializable {
 	private String language;
 	private String name;
 	private int priority;
+    private Map<String, Object> metaData = new HashMap<String, Object>();
 	
 	public SequenceFlow(String id, String sourceRef, String targetRef) {
 		this.id = id;
@@ -96,5 +99,17 @@ public class SequenceFlow implements Serializable {
 	
 	public void setPriority(int priority) {
 		this.priority = priority;
+	}
+
+    public Map<String, Object> getMetaData() {
+        return this.metaData;
+    }
+
+    public void setMetaData(String name, Object data) {
+        this.metaData.put(name, data);
+    }
+	
+	public String toString() { 
+	    return "SequenceFlow (" + this.id + ") [" + this.sourceRef + " -> " + this.targetRef + "]";
 	}
 }

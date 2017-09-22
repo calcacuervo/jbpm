@@ -1,8 +1,20 @@
-/**
- * <copyright>
- * </copyright>
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
- * $Id$
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
  */
 package org.jboss.drools.util;
 
@@ -87,6 +99,7 @@ public class DroolsValidator extends EObjectValidator {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	protected EPackage getEPackage() {
 	  return DroolsPackage.eINSTANCE;
 	}
@@ -97,7 +110,8 @@ public class DroolsValidator extends EObjectValidator {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	protected boolean validate(int classifierID, Object value, DiagnosticChain diagnostics, Map context) {
+	@Override
+	protected boolean validate(int classifierID, Object value, DiagnosticChain diagnostics, Map<Object, Object> context) {
 		switch (classifierID) {
 			case DroolsPackage.DOCUMENT_ROOT:
 				return validateDocumentRoot((DocumentRoot)value, diagnostics, context);
@@ -105,6 +119,8 @@ public class DroolsValidator extends EObjectValidator {
 				return validateGlobalType((GlobalType)value, diagnostics, context);
 			case DroolsPackage.IMPORT_TYPE:
 				return validateImportType((ImportType)value, diagnostics, context);
+			case DroolsPackage.META_DATA_TYPE:
+				return validateMetaDataType((MetaDataType)value, diagnostics, context);
 			case DroolsPackage.ON_ENTRY_SCRIPT_TYPE:
 				return validateOnEntryScriptType((OnEntryScriptType)value, diagnostics, context);
 			case DroolsPackage.ON_EXIT_SCRIPT_TYPE:
@@ -129,7 +145,7 @@ public class DroolsValidator extends EObjectValidator {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public boolean validateDocumentRoot(DocumentRoot documentRoot, DiagnosticChain diagnostics, Map context) {
+	public boolean validateDocumentRoot(DocumentRoot documentRoot, DiagnosticChain diagnostics, Map<Object, Object> context) {
 		return validate_EveryDefaultConstraint(documentRoot, diagnostics, context);
 	}
 
@@ -138,7 +154,7 @@ public class DroolsValidator extends EObjectValidator {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public boolean validateGlobalType(GlobalType globalType, DiagnosticChain diagnostics, Map context) {
+	public boolean validateGlobalType(GlobalType globalType, DiagnosticChain diagnostics, Map<Object, Object> context) {
 		return validate_EveryDefaultConstraint(globalType, diagnostics, context);
 	}
 
@@ -147,7 +163,7 @@ public class DroolsValidator extends EObjectValidator {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public boolean validateImportType(ImportType importType, DiagnosticChain diagnostics, Map context) {
+	public boolean validateImportType(ImportType importType, DiagnosticChain diagnostics, Map<Object, Object> context) {
 		return validate_EveryDefaultConstraint(importType, diagnostics, context);
 	}
 
@@ -156,7 +172,16 @@ public class DroolsValidator extends EObjectValidator {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public boolean validateOnEntryScriptType(OnEntryScriptType onEntryScriptType, DiagnosticChain diagnostics, Map context) {
+	public boolean validateMetaDataType(MetaDataType metaDataType, DiagnosticChain diagnostics, Map<Object, Object> context) {
+		return validate_EveryDefaultConstraint(metaDataType, diagnostics, context);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public boolean validateOnEntryScriptType(OnEntryScriptType onEntryScriptType, DiagnosticChain diagnostics, Map<Object, Object> context) {
 		return validate_EveryDefaultConstraint(onEntryScriptType, diagnostics, context);
 	}
 
@@ -165,7 +190,7 @@ public class DroolsValidator extends EObjectValidator {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public boolean validateOnExitScriptType(OnExitScriptType onExitScriptType, DiagnosticChain diagnostics, Map context) {
+	public boolean validateOnExitScriptType(OnExitScriptType onExitScriptType, DiagnosticChain diagnostics, Map<Object, Object> context) {
 		return validate_EveryDefaultConstraint(onExitScriptType, diagnostics, context);
 	}
 
@@ -174,7 +199,7 @@ public class DroolsValidator extends EObjectValidator {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public boolean validatePackageNameType(String packageNameType, DiagnosticChain diagnostics, Map context) {
+	public boolean validatePackageNameType(String packageNameType, DiagnosticChain diagnostics, Map<Object, Object> context) {
 		return true;
 	}
 
@@ -183,7 +208,7 @@ public class DroolsValidator extends EObjectValidator {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public boolean validatePriorityType(BigInteger priorityType, DiagnosticChain diagnostics, Map context) {
+	public boolean validatePriorityType(BigInteger priorityType, DiagnosticChain diagnostics, Map<Object, Object> context) {
 		boolean result = validatePriorityType_Min(priorityType, diagnostics, context);
 		return result;
 	}
@@ -202,7 +227,7 @@ public class DroolsValidator extends EObjectValidator {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public boolean validatePriorityType_Min(BigInteger priorityType, DiagnosticChain diagnostics, Map context) {
+	public boolean validatePriorityType_Min(BigInteger priorityType, DiagnosticChain diagnostics, Map<Object, Object> context) {
 		boolean result = priorityType.compareTo(PRIORITY_TYPE__MIN__VALUE) >= 0;
 		if (!result && diagnostics != null)
 			reportMinViolation(DroolsPackage.Literals.PRIORITY_TYPE, priorityType, PRIORITY_TYPE__MIN__VALUE, true, diagnostics, context);
@@ -214,7 +239,7 @@ public class DroolsValidator extends EObjectValidator {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public boolean validateRuleFlowGroupType(String ruleFlowGroupType, DiagnosticChain diagnostics, Map context) {
+	public boolean validateRuleFlowGroupType(String ruleFlowGroupType, DiagnosticChain diagnostics, Map<Object, Object> context) {
 		return true;
 	}
 
@@ -223,7 +248,7 @@ public class DroolsValidator extends EObjectValidator {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public boolean validateTaskNameType(String taskNameType, DiagnosticChain diagnostics, Map context) {
+	public boolean validateTaskNameType(String taskNameType, DiagnosticChain diagnostics, Map<Object, Object> context) {
 		return true;
 	}
 
@@ -232,7 +257,7 @@ public class DroolsValidator extends EObjectValidator {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public boolean validateVersionType(String versionType, DiagnosticChain diagnostics, Map context) {
+	public boolean validateVersionType(String versionType, DiagnosticChain diagnostics, Map<Object, Object> context) {
 		return true;
 	}
 

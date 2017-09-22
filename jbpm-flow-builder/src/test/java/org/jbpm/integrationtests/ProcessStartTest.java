@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.integrationtests;
 
 import java.io.Reader;
@@ -5,21 +21,25 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.drools.RuleBase;
-import org.drools.RuleBaseFactory;
-import org.drools.StatefulSession;
-import org.drools.common.InternalWorkingMemory;
-import org.drools.compiler.DroolsError;
-import org.drools.compiler.PackageBuilder;
-import org.drools.rule.Package;
-import org.jbpm.JbpmTestCase;
-import org.jbpm.Message;
-import org.jbpm.Person;
+import org.drools.compiler.compiler.DroolsError;
+import org.drools.core.common.InternalWorkingMemory;
+import org.jbpm.integrationtests.test.Message;
+import org.jbpm.integrationtests.test.Person;
+import org.jbpm.test.util.AbstractBaseTest;
+import org.junit.Test;
+import org.kie.api.runtime.KieSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ProcessStartTest extends JbpmTestCase {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+public class ProcessStartTest extends AbstractBaseTest {
     
+    private static final Logger logger = LoggerFactory.getLogger(ProcessStartTest.class);
+    
+    @Test
 	public void testStartConstraintTrigger() throws Exception {
-		PackageBuilder builder = new PackageBuilder();
 		Reader source = new StringReader(
 			"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
 			"<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -29,17 +49,17 @@ public class ProcessStartTest extends JbpmTestCase {
 			"\n" +
 			"  <header>\n" +
 			"    <imports>\n" +
-			"      <import name=\"org.jbpm.Person\" />\n" +
+			"      <import name=\"org.jbpm.integrationtests.test.Person\" />\n" +
 			"    </imports>\n" +
 			"    <globals>\n" +
 			"      <global identifier=\"myList\" type=\"java.util.List\" />\n" +
 			"    </globals>\n" +
             "    <variables>\n" +
             "      <variable name=\"SomeVar\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "      </variable>\n" +
             "      <variable name=\"SomeOtherVar\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
 			"  </header>\n" +
@@ -70,15 +90,13 @@ public class ProcessStartTest extends JbpmTestCase {
 		builder.addRuleFlow(source);
 		if (!builder.getErrors().isEmpty()) {
 			for (DroolsError error: builder.getErrors().getErrors()) {
-				System.err.println(error);
+			    logger.error(error.toString());
 			}
 			fail("Could not build process");
 		}
 		
-		Package pkg = builder.getPackage();
-		RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-		ruleBase.addPackage( pkg );
-		StatefulSession session = ruleBase.newStatefulSession();
+        KieSession session = createKieSession(builder.getPackages());
+        
 		List<Message> myList = new ArrayList<Message>();
 		session.setGlobal("myList", myList);
 
@@ -93,8 +111,8 @@ public class ProcessStartTest extends JbpmTestCase {
         assertEquals("SomeString", myList.get(1));
 	}
 	
+    @Test
 	public void testStartEventTrigger() throws Exception {
-		PackageBuilder builder = new PackageBuilder();
 		Reader source = new StringReader(
 			"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
 			"<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -108,10 +126,10 @@ public class ProcessStartTest extends JbpmTestCase {
 			"    </globals>\n" +
             "    <variables>\n" +
             "      <variable name=\"SomeVar\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "      </variable>\n" +
             "      <variable name=\"SomeOtherVar\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
 			"  </header>\n" +
@@ -144,15 +162,13 @@ public class ProcessStartTest extends JbpmTestCase {
 		builder.addRuleFlow(source);
 		if (!builder.getErrors().isEmpty()) {
 			for (DroolsError error: builder.getErrors().getErrors()) {
-				System.err.println(error);
+			    logger.error(error.toString());
 			}
 			fail("Could not build process");
 		}
 		
-		Package pkg = builder.getPackage();
-		RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-		ruleBase.addPackage( pkg );
-		StatefulSession session = ruleBase.newStatefulSession();
+        KieSession session = createKieSession(builder.getPackages());
+        
 		List<Message> myList = new ArrayList<Message>();
 		session.setGlobal("myList", myList);
 

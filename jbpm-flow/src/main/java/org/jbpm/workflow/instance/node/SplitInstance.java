@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,16 @@ package org.jbpm.workflow.instance.node;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import org.drools.common.InternalKnowledgeRuntime;
-import org.drools.definition.process.Connection;
-import org.drools.definition.process.Node;
-import org.drools.runtime.process.NodeInstance;
+import org.drools.core.common.InternalKnowledgeRuntime;
+import org.kie.api.definition.process.Connection;
+import org.kie.api.definition.process.Node;
+import org.kie.api.runtime.process.NodeInstance;
 import org.jbpm.process.core.context.exclusive.ExclusiveGroup;
 import org.jbpm.process.instance.ContextInstanceContainer;
 import org.jbpm.process.instance.InternalProcessRuntime;
@@ -34,12 +36,12 @@ import org.jbpm.process.instance.context.exclusive.ExclusiveGroupInstance;
 import org.jbpm.process.instance.impl.ConstraintEvaluator;
 import org.jbpm.workflow.core.node.Split;
 import org.jbpm.workflow.instance.NodeInstanceContainer;
+import org.jbpm.workflow.instance.WorkflowRuntimeException;
 import org.jbpm.workflow.instance.impl.NodeInstanceImpl;
 
 /**
  * Runtime counterpart of a split node.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public class SplitInstance extends NodeInstanceImpl {
 
@@ -55,6 +57,17 @@ public class SplitInstance extends NodeInstanceImpl {
                 "A Split only accepts default incoming connections!");
         }
         final Split split = getSplit();
+        
+        try { 
+            executeStrategy(split, type);
+        } catch(WorkflowRuntimeException wre) { 
+            throw wre;
+        } catch(Exception e) { 
+           throw new WorkflowRuntimeException(this, getProcessInstance(), "Unable to execute Split: " + e.getMessage(), e); 
+        }
+    }
+    
+    protected void executeStrategy(Split split, String type) { 
         // TODO make different strategies for each type
         switch ( split.getType() ) {
             case Split.TYPE_AND :
@@ -87,8 +100,7 @@ public class SplitInstance extends NodeInstanceImpl {
                 if ( selected == null ) {
                 	for ( final Iterator<Connection> iterator = outgoing.iterator(); iterator.hasNext(); ) {
                         final Connection connection = (Connection) iterator.next();
-                        ConstraintEvaluator constraint = (ConstraintEvaluator) split.getConstraint( connection );
-                        if ( constraint.isDefault() ) {
+                        if (split.isDefault(connection)) {
                             selected = connection;
                             break;
                         }
@@ -96,6 +108,10 @@ public class SplitInstance extends NodeInstanceImpl {
                 }
                 if ( selected == null ) {
                 	throw new IllegalArgumentException( "XOR split could not find at least one valid outgoing connection for split " + getSplit().getName() );
+                }
+                if (!hasLoop(selected.getTo(), split)) {
+                    setLevel(1);
+                    ((NodeInstanceContainer)getNodeInstanceContainer()).setCurrentLevel(1);
                 }
                 triggerConnection(selected);
                 break;
@@ -133,6 +149,7 @@ public class SplitInstance extends NodeInstanceImpl {
                     }
                     outgoingCopy.remove(selectedConnection);
                 }
+                 
                 for (NodeInstanceTrigger nodeInstance: nodeInstances) {
     	        	// stop if this process instance has been aborted / completed
     	        	if (getProcessInstance().getState() != ProcessInstance.STATE_ACTIVE) {
@@ -144,7 +161,7 @@ public class SplitInstance extends NodeInstanceImpl {
                 	for ( final Iterator<Connection> iterator = outgoing.iterator(); iterator.hasNext(); ) {
                         final Connection connection = (Connection) iterator.next();
                         ConstraintEvaluator constraint = (ConstraintEvaluator) split.getConstraint( connection );
-                        if ( constraint.isDefault() ) {
+                        if ( constraint != null && constraint.isDefault() || split.isDefault(connection)) {
                         	triggerConnection(connection);
                         	found = true;
                             break;
@@ -167,7 +184,7 @@ public class SplitInstance extends NodeInstanceImpl {
                 		.nodeInstanceCompleted(this, type);
                 } else {
                 	ExclusiveGroupInstance groupInstance = new ExclusiveGroupInstance();
-            		org.drools.runtime.process.NodeInstanceContainer parent = getNodeInstanceContainer();
+            		org.kie.api.runtime.process.NodeInstanceContainer parent = getNodeInstanceContainer();
                 	if (parent instanceof ContextInstanceContainer) {
                 		((ContextInstanceContainer) parent).addContextInstance(ExclusiveGroup.EXCLUSIVE_GROUP, groupInstance);
                 	} else {
@@ -195,8 +212,7 @@ public class SplitInstance extends NodeInstanceImpl {
         	        		((InternalProcessRuntime) kruntime.getProcessRuntime())
         	        			.getProcessEventSupport().fireBeforeNodeLeft(this, kruntime);
         	        	}
-        	            ((org.jbpm.workflow.instance.NodeInstance) entry.getKey())
-        	        		.trigger(this, entry.getValue());
+        	            ((org.jbpm.workflow.instance.NodeInstance) entry.getKey()).trigger(this, entry.getValue());
         	            if (!hidden) {
         	            	((InternalProcessRuntime) kruntime.getProcessRuntime())
         	            		.getProcessEventSupport().fireAfterNodeLeft(this, kruntime);
@@ -209,18 +225,38 @@ public class SplitInstance extends NodeInstanceImpl {
         }
     }
     
-    private class NodeInstanceTrigger {
-    	private org.jbpm.workflow.instance.NodeInstance nodeInstance;
-    	private String toType;
-    	public NodeInstanceTrigger(org.jbpm.workflow.instance.NodeInstance nodeInstance, String toType) {
-    		this.nodeInstance = nodeInstance;
-    		this.toType = toType;
-    	}
-    	public org.jbpm.workflow.instance.NodeInstance getNodeInstance() {
-    		return nodeInstance;
-    	}
-    	public String getToType() {
-    		return toType;
-    	}
+    
+    protected boolean hasLoop(Node startAt, final Node lookFor) {
+        Set<Long> vistedNodes = new HashSet<Long>();
+        
+        return checkNodes(startAt, lookFor, vistedNodes);
+        
     }
+    
+    protected boolean checkNodes(Node currentNode, final Node lookFor, Set<Long> vistedNodes) {        
+        List<Connection> connections = currentNode.getOutgoingConnections(org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE);
+
+        for (Connection conn : connections) {
+            Node nextNode = conn.getTo();
+            if (nextNode == null) {
+                continue;
+            } else if (vistedNodes.contains(nextNode.getId())) {
+                continue;
+            } else {
+                vistedNodes.add(nextNode.getId());
+                if (nextNode.getId() == lookFor.getId()) {                    
+                    return true;
+                } 
+                                
+                boolean nestedCheck = checkNodes(nextNode, lookFor, vistedNodes);
+                if (nestedCheck) {
+                    return true;
+                }
+                
+            }
+        }
+        
+        return false;
+    }
+    
 }

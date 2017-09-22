@@ -1,10 +1,26 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.compiler.xml.processes;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.drools.definition.process.Connection;
+import org.kie.api.definition.process.Connection;
 import org.jbpm.compiler.xml.XmlRuleFlowProcessDumper;
 import org.jbpm.compiler.xml.XmlWorkflowProcessDumper;
 import org.jbpm.process.core.context.exception.ExceptionScope;
@@ -95,7 +111,7 @@ public class CompositeNodeHandler extends AbstractNodeHandler {
     protected List<Node> getSubNodes(CompositeNode compositeNode) {
     	List<Node> subNodes =
     		new ArrayList<Node>();
-        for (org.drools.definition.process.Node subNode: compositeNode.getNodes()) {
+        for (org.kie.api.definition.process.Node subNode: compositeNode.getNodes()) {
         	// filter out composite start and end nodes as they can be regenerated
         	if ((!(subNode instanceof CompositeNode.CompositeNodeStart)) &&
     			(!(subNode instanceof CompositeNode.CompositeNodeEnd))) {
@@ -107,7 +123,7 @@ public class CompositeNodeHandler extends AbstractNodeHandler {
     
     protected List<Connection> getSubConnections(CompositeNode compositeNode) {
     	List<Connection> connections = new ArrayList<Connection>();
-        for (org.drools.definition.process.Node subNode: compositeNode.getNodes()) {
+        for (org.kie.api.definition.process.Node subNode: compositeNode.getNodes()) {
         	// filter out composite start and end nodes as they can be regenerated
             if (!(subNode instanceof CompositeNode.CompositeNodeEnd)) {
                 for (Connection connection: subNode.getIncomingConnections(Node.CONNECTION_DEFAULT_TYPE)) {

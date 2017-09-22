@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.integrationtests;
 
 import java.io.Reader;
@@ -5,23 +21,26 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.drools.RuleBase;
-import org.drools.RuleBaseFactory;
-import org.drools.WorkingMemory;
-import org.drools.compiler.DroolsError;
-import org.drools.compiler.PackageBuilder;
-import org.drools.rule.Package;
-import org.jbpm.JbpmTestCase;
-import org.jbpm.Person;
+import org.drools.compiler.compiler.DroolsError;
+import org.jbpm.integrationtests.test.Person;
 import org.jbpm.process.core.context.variable.VariableScope;
 import org.jbpm.process.instance.ProcessInstance;
 import org.jbpm.process.instance.context.variable.VariableScopeInstance;
 import org.jbpm.ruleflow.instance.RuleFlowProcessInstance;
+import org.jbpm.test.util.AbstractBaseTest;
+import org.junit.Test;
+import org.kie.api.runtime.KieSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ProcessMilestoneTest extends JbpmTestCase {
+import static org.junit.Assert.assertEquals;
+
+public class ProcessMilestoneTest extends AbstractBaseTest {
     
+    private static final Logger logger = LoggerFactory.getLogger(ProcessMilestoneTest.class);
+    
+    @Test
     public void testMilestone() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -31,7 +50,7 @@ public class ProcessMilestoneTest extends JbpmTestCase {
             "\n" +
             "  <header>\n" +
             "    <imports>\n" +
-            "      <import name=\"org.jbpm.Person\" />\n" +
+            "      <import name=\"org.jbpm.integrationtests.test.Person\" />\n" +
             "    </imports>\n" +
             "  </header>\n" +
             "\n" +
@@ -50,22 +69,20 @@ public class ProcessMilestoneTest extends JbpmTestCase {
             "\n" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+
+        KieSession workingMemory = createKieSession(builder.getPackages());
         
-        ProcessInstance processInstance = ( ProcessInstance )
-            workingMemory.startProcess("org.drools.milestone");
+        ProcessInstance processInstance = ( ProcessInstance ) workingMemory.startProcess("org.drools.milestone");
         assertEquals(ProcessInstance.STATE_ACTIVE, processInstance.getState());
         workingMemory.insert(new Person("Jane Doe", 20));
         assertEquals(ProcessInstance.STATE_ACTIVE, processInstance.getState());
         workingMemory.insert(new Person("John Doe", 50));
+        workingMemory.fireAllRules();
         assertEquals(ProcessInstance.STATE_COMPLETED, processInstance.getState());
     }
     
+    @Test
     public void testMilestoneWithProcessInstanceConstraint() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -75,12 +92,12 @@ public class ProcessMilestoneTest extends JbpmTestCase {
             "\n" +
             "  <header>\n" +
             "    <imports>\n" +
-            "      <import name=\"org.jbpm.Person\" />\n" +
+            "      <import name=\"org.jbpm.integrationtests.test.Person\" />\n" +
             "      <import name=\"org.jbpm.integrationtests.ProcessMilestoneTest.ProcessUtils\" />\n" +
             "    </imports>\n" +
             "    <variables>\n" +
             "      <variable name=\"name\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>\n" +
@@ -101,13 +118,11 @@ public class ProcessMilestoneTest extends JbpmTestCase {
             "\n" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
         for (DroolsError error: builder.getErrors().getErrors()) {
-        	System.err.println(error);
+        	logger.error(error.toString());
         }
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+
+        KieSession workingMemory = createKieSession(builder.getPackages());
         
         Person john = new Person("John Doe", 20);
         Person jane = new Person("Jane Doe", 20);
@@ -127,10 +142,12 @@ public class ProcessMilestoneTest extends JbpmTestCase {
         assertEquals(ProcessInstance.STATE_ACTIVE, processInstanceJane.getState());
         
         workingMemory.insert(jane);
+        workingMemory.fireAllRules();
         assertEquals(ProcessInstance.STATE_ACTIVE, processInstanceJohn.getState());
         assertEquals(ProcessInstance.STATE_COMPLETED, processInstanceJane.getState());
         
         workingMemory.insert(john);
+        workingMemory.fireAllRules();
         assertEquals(ProcessInstance.STATE_COMPLETED, processInstanceJohn.getState());
     }
     

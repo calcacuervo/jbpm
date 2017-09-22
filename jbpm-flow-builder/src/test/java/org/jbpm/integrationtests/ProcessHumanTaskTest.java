@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.integrationtests;
 
 import java.io.Reader;
@@ -5,21 +21,19 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.drools.RuleBase;
-import org.drools.RuleBaseFactory;
-import org.drools.WorkingMemory;
-import org.drools.compiler.PackageBuilder;
-import org.drools.rule.Package;
-import org.drools.runtime.process.WorkItem;
-import org.drools.runtime.process.WorkItemHandler;
-import org.drools.runtime.process.WorkItemManager;
-import org.jbpm.JbpmTestCase;
+import org.jbpm.integrationtests.handler.TestWorkItemHandler;
 import org.jbpm.process.instance.ProcessInstance;
+import org.jbpm.test.util.AbstractBaseTest;
+import org.junit.Test;
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.process.WorkItem;
 
-public class ProcessHumanTaskTest extends JbpmTestCase {
-    
+import static org.junit.Assert.*;
+
+public class ProcessHumanTaskTest extends AbstractBaseTest {
+   
+    @Test
     public void testHumanTask() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -35,18 +49,18 @@ public class ProcessHumanTaskTest extends JbpmTestCase {
             "    <humanTask id=\"2\" name=\"HumanTask\" >\n" +
             "      <work name=\"Human Task\" >\n" +
             "        <parameter name=\"ActorId\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "          <value>John Doe</value>\n" +
             "        </parameter>\n" +
             "        <parameter name=\"TaskName\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "          <value>Do something</value>\n" +
             "        </parameter>\n" +
             "        <parameter name=\"Priority\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "        </parameter>\n" +
             "        <parameter name=\"Comment\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "        </parameter>\n" +
             "      </work>\n" +
             "    </humanTask>\n" +
@@ -60,10 +74,9 @@ public class ProcessHumanTaskTest extends JbpmTestCase {
             "\n" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+        
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         TestWorkItemHandler handler = new TestWorkItemHandler();
         workingMemory.getWorkItemManager().registerWorkItemHandler("Human Task", handler);
         ProcessInstance processInstance = ( ProcessInstance )
@@ -75,8 +88,8 @@ public class ProcessHumanTaskTest extends JbpmTestCase {
         assertEquals(ProcessInstance.STATE_COMPLETED, processInstance.getState());
     }
     
+    @Test
     public void testSwimlane() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -95,37 +108,39 @@ public class ProcessHumanTaskTest extends JbpmTestCase {
             "    <humanTask id=\"2\" name=\"HumanTask\" swimlane=\"actor1\" >\n" +
             "      <work name=\"Human Task\" >\n" +
             "        <parameter name=\"ActorId\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "          <value>John Doe</value>\n" +
             "        </parameter>\n" +
             "        <parameter name=\"TaskName\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "          <value>Do something</value>\n" +
             "        </parameter>\n" +
             "        <parameter name=\"Priority\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "        </parameter>\n" +
             "        <parameter name=\"Comment\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "        </parameter>\n" +
             "      </work>\n" +
+            "      <mapping type=\"out\" from=\"ActorId\" to=\"ActorId\" />" +
             "    </humanTask>\n" +
             "    <humanTask id=\"3\" name=\"HumanTask\" swimlane=\"actor1\" >\n" +
             "      <work name=\"Human Task\" >\n" +
             "        <parameter name=\"ActorId\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "        </parameter>\n" +
             "        <parameter name=\"TaskName\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "          <value>Do something else</value>\n" +
             "        </parameter>\n" +
             "        <parameter name=\"Priority\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "        </parameter>\n" +
             "        <parameter name=\"Comment\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "        </parameter>\n" +
             "      </work>\n" +
+            "      <mapping type=\"out\" from=\"ActorId\" to=\"ActorId\" />" +
             "    </humanTask>\n" +
             "    <end id=\"4\" name=\"End\" />\n" +
             "  </nodes>\n" +
@@ -138,10 +153,9 @@ public class ProcessHumanTaskTest extends JbpmTestCase {
             "\n" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+        
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         TestWorkItemHandler handler = new TestWorkItemHandler();
         workingMemory.getWorkItemManager().registerWorkItemHandler("Human Task", handler);
         ProcessInstance processInstance = ( ProcessInstance )
@@ -157,13 +171,13 @@ public class ProcessHumanTaskTest extends JbpmTestCase {
         workItem = handler.getWorkItem();
         assertNotNull(workItem);
         assertEquals("Do something else", workItem.getParameter("TaskName"));
-        assertEquals("Jane Doe", workItem.getParameter("ActorId"));
+        assertEquals("Jane Doe", workItem.getParameter("SwimlaneActorId"));
         workingMemory.getWorkItemManager().completeWorkItem(workItem.getId(), null);
         assertEquals(ProcessInstance.STATE_COMPLETED, processInstance.getState());
     }
 
+    @Test
     public void testHumanTaskCancel() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -179,18 +193,18 @@ public class ProcessHumanTaskTest extends JbpmTestCase {
             "    <humanTask id=\"2\" name=\"HumanTask\" >\n" +
             "      <work name=\"Human Task\" >\n" +
             "        <parameter name=\"ActorId\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "          <value>John Doe</value>\n" +
             "        </parameter>\n" +
             "        <parameter name=\"TaskName\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "          <value>Do something</value>\n" +
             "        </parameter>\n" +
             "        <parameter name=\"Priority\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "        </parameter>\n" +
             "        <parameter name=\"Comment\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "        </parameter>\n" +
             "      </work>\n" +
             "    </humanTask>\n" +
@@ -204,10 +218,9 @@ public class ProcessHumanTaskTest extends JbpmTestCase {
             "\n" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+        
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         TestWorkItemHandler handler = new TestWorkItemHandler();
         workingMemory.getWorkItemManager().registerWorkItemHandler("Human Task", handler);
         ProcessInstance processInstance = ( ProcessInstance )
@@ -219,8 +232,8 @@ public class ProcessHumanTaskTest extends JbpmTestCase {
         assertTrue(handler.isAborted());
     }
     
+    @Test
     public void testHumanTaskCancel2() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -236,18 +249,18 @@ public class ProcessHumanTaskTest extends JbpmTestCase {
             "    <humanTask id=\"2\" name=\"HumanTask\" >\n" +
             "      <work name=\"Human Task\" >\n" +
             "        <parameter name=\"ActorId\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "          <value>John Doe</value>\n" +
             "        </parameter>\n" +
             "        <parameter name=\"TaskName\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "          <value>Do something</value>\n" +
             "        </parameter>\n" +
             "        <parameter name=\"Priority\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "        </parameter>\n" +
             "        <parameter name=\"Comment\" >\n" +
-            "          <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "          <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "        </parameter>\n" +
             "      </work>\n" +
             "      <onExit>\n" +
@@ -264,10 +277,9 @@ public class ProcessHumanTaskTest extends JbpmTestCase {
             "\n" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+        
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         TestWorkItemHandler handler = new TestWorkItemHandler();
         workingMemory.getWorkItemManager().registerWorkItemHandler("Human Task", handler);
         ProcessInstance processInstance = ( ProcessInstance )
@@ -279,20 +291,4 @@ public class ProcessHumanTaskTest extends JbpmTestCase {
         assertFalse(handler.isAborted());
     }
 
-    private static class TestWorkItemHandler implements WorkItemHandler {
-        private WorkItem workItem;
-        private boolean aborted = false; 
-        public void executeWorkItem(WorkItem workItem, WorkItemManager manager) {
-            this.workItem = workItem;
-        }
-        public void abortWorkItem(WorkItem workItem, WorkItemManager manager) {
-        	aborted = true;
-        }
-        public WorkItem getWorkItem() {
-            return workItem;
-        }
-        public boolean isAborted() {
-        	return aborted;
-        }
-    }
 }

@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,18 +22,19 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.drools.definition.process.Connection;
-import org.drools.definition.process.NodeContainer;
 import org.jbpm.process.core.Context;
 import org.jbpm.process.core.ContextResolver;
+import org.jbpm.workflow.core.Constraint;
 import org.jbpm.workflow.core.Node;
 import org.jbpm.workflow.core.node.CompositeNode;
+import org.kie.api.definition.process.Connection;
+import org.kie.api.definition.process.NodeContainer;
 
 /**
  * Default implementation of a node.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public abstract class NodeImpl implements Node, Serializable, ContextResolver {
 
@@ -42,13 +43,16 @@ public abstract class NodeImpl implements Node, Serializable, ContextResolver {
 	protected static final NodeImpl[] EMPTY_NODE_ARRAY = new NodeImpl[0];
 
     private long id;
+    private static final AtomicLong uniqueIdGen = new AtomicLong(0);
 
     private String name;
     private Map<String, List<Connection>> incomingConnections;
     private Map<String, List<Connection>> outgoingConnections;
-    private NodeContainer nodeContainer;
+    private NodeContainer parentNodeContainer;
     private Map<String, Context> contexts = new HashMap<String, Context>();
     private Map<String, Object> metaData = new HashMap<String, Object>();
+    
+    protected Map<ConnectionRef, Constraint> constraints = new HashMap<ConnectionRef, Constraint>();
 
     public NodeImpl() {
         this.id = -1;
@@ -73,6 +77,10 @@ public abstract class NodeImpl implements Node, Serializable, ContextResolver {
 
     public void setId(final long id) {
         this.id = id;
+        String uniqueId = (String) getMetaData("UniqueId");
+        if( uniqueId == null ) { 
+            setMetaData("UniqueId", "_jbpm-unique-" + uniqueIdGen.getAndIncrement() );
+        }
     }
 
     public String getName() {
@@ -151,6 +159,14 @@ public abstract class NodeImpl implements Node, Serializable, ContextResolver {
         validateRemoveIncomingConnection(type, connection);
         this.incomingConnections.get(type).remove(connection);
     }
+    
+    public void clearIncomingConnection() {
+        this.incomingConnections.clear();
+    }
+    
+    public void clearOutgoingConnection() {
+        this.outgoingConnections.clear();
+    }
 
     public void validateRemoveIncomingConnection(final String type, final Connection connection) {
         if (type == null) {
@@ -193,7 +209,7 @@ public abstract class NodeImpl implements Node, Serializable, ContextResolver {
         if (list.size() == 1) {
         	return list.get(0);
         }
-        if (System.getProperty("jbpm.enable.multi.con") != null) { 
+        if ("true".equals(System.getProperty("jbpm.enable.multi.con"))) { 
         	return list.get(0);
         } else {
         	throw new IllegalArgumentException(
@@ -211,7 +227,7 @@ public abstract class NodeImpl implements Node, Serializable, ContextResolver {
         if (list.size() == 1) {
         	return list.get(0);
         }
-        if (System.getProperty("jbpm.enable.multi.con") != null) { 
+        if ("true".equals(System.getProperty("jbpm.enable.multi.con"))) { 
         	return list.get(0);
         } else {
         	throw new IllegalArgumentException(
@@ -230,11 +246,11 @@ public abstract class NodeImpl implements Node, Serializable, ContextResolver {
     }
 
     public NodeContainer getNodeContainer() {
-        return nodeContainer;
+        return parentNodeContainer;
     }
     
     public void setNodeContainer(NodeContainer nodeContainer) {
-        this.nodeContainer = nodeContainer;
+        this.parentNodeContainer = nodeContainer;
     }
     
     public void setContext(String contextId, Context context) {
@@ -253,7 +269,7 @@ public abstract class NodeImpl implements Node, Serializable, ContextResolver {
                 return context;
             }
         }
-        return ((org.jbpm.workflow.core.NodeContainer) nodeContainer).resolveContext(contextId, param);
+        return ((org.jbpm.workflow.core.NodeContainer) parentNodeContainer).resolveContext(contextId, param);
     }
     
     public void setMetaData(String name, Object value) {
@@ -270,6 +286,47 @@ public abstract class NodeImpl implements Node, Serializable, ContextResolver {
     
     public void setMetaData(Map<String, Object> metaData) {
     	this.metaData = metaData;
+    }
+    
+    public Constraint getConstraint(final Connection connection) {
+        if ( connection == null ) {
+            throw new IllegalArgumentException( "connection is null" );
+        }
+
+        
+       ConnectionRef ref = new ConnectionRef(connection.getTo().getId(), connection.getToType());
+       return this.constraints.get(ref);
+       
+    }
+
+    public Constraint internalGetConstraint(final ConnectionRef ref) {
+        return this.constraints.get(ref);
+    }
+
+    public void setConstraint(final Connection connection,
+                              final Constraint constraint) {
+    	if ( connection == null ) {
+            throw new IllegalArgumentException( "connection is null" );
+        }
+        if (!getDefaultOutgoingConnections().contains(connection)) {
+            throw new IllegalArgumentException("connection is unknown:" + connection);
+        }
+        addConstraint(
+            new ConnectionRef(connection.getTo().getId(), connection.getToType()),
+            constraint);
+
+    }
+
+    public void addConstraint(ConnectionRef connectionRef, Constraint constraint) {
+    	if (connectionRef == null) {
+    		throw new IllegalArgumentException(
+				"A " + this.getName() + " node only accepts constraints linked to a connection");
+    	}
+        this.constraints.put(connectionRef, constraint);
+    }
+
+    public Map<ConnectionRef, Constraint> getConstraints() {
+        return Collections.unmodifiableMap( this.constraints );
     }
     
 }

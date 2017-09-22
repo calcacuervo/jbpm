@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,26 +16,24 @@
 
 package org.jbpm.workflow.instance.node;
 
-import org.drools.common.InternalKnowledgeRuntime;
-import org.drools.event.rule.ActivationCancelledEvent;
-import org.drools.event.rule.ActivationCreatedEvent;
-import org.drools.event.rule.AfterActivationFiredEvent;
-import org.drools.event.rule.AgendaEventListener;
-import org.drools.event.rule.AgendaGroupPoppedEvent;
-import org.drools.event.rule.AgendaGroupPushedEvent;
-import org.drools.event.rule.BeforeActivationFiredEvent;
-import org.drools.event.rule.RuleFlowGroupActivatedEvent;
-import org.drools.event.rule.RuleFlowGroupDeactivatedEvent;
-import org.drools.rule.Rule;
-import org.drools.runtime.process.NodeInstance;
-import org.drools.runtime.rule.impl.InternalAgenda;
-import org.drools.spi.Activation;
+import org.drools.core.common.InternalAgenda;
+import org.drools.core.definitions.rule.impl.RuleImpl;
+import org.drools.core.spi.Activation;
 import org.jbpm.workflow.core.node.MilestoneNode;
+import org.kie.api.event.rule.AfterMatchFiredEvent;
+import org.kie.api.event.rule.AgendaEventListener;
+import org.kie.api.event.rule.AgendaGroupPoppedEvent;
+import org.kie.api.event.rule.AgendaGroupPushedEvent;
+import org.kie.api.event.rule.BeforeMatchFiredEvent;
+import org.kie.api.event.rule.MatchCancelledEvent;
+import org.kie.api.event.rule.MatchCreatedEvent;
+import org.kie.api.event.rule.RuleFlowGroupActivatedEvent;
+import org.kie.api.event.rule.RuleFlowGroupDeactivatedEvent;
+import org.kie.api.runtime.process.NodeInstance;
 
 /**
  * Runtime counterpart of a milestone node.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public class MilestoneNodeInstance extends StateBasedNodeInstance implements AgendaEventListener {
 
@@ -47,7 +45,11 @@ public class MilestoneNodeInstance extends StateBasedNodeInstance implements Age
 
     public void internalTrigger(final NodeInstance from, String type) {
     	super.internalTrigger(from, type);
-        if (!org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE.equals(type)) {
+    	// if node instance was cancelled, abort
+		if (getNodeInstanceContainer().getNodeInstance(getId()) == null) {
+			return;
+		}
+		if (!org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE.equals(type)) {
             throw new IllegalArgumentException(
                 "A MilestoneNode only accepts default incoming connections!");
         }
@@ -69,25 +71,40 @@ public class MilestoneNodeInstance extends StateBasedNodeInstance implements Age
     
     private void addActivationListener() {
     	getProcessInstance().getKnowledgeRuntime().addEventListener(this);
+    	getProcessInstance().addEventListener(getActivationEventType(), this, true);
     }
 
     public void removeEventListeners() {
         super.removeEventListeners();
         getProcessInstance().getKnowledgeRuntime().removeEventListener(this);
+        getProcessInstance().removeEventListener(getActivationEventType(), this, true);
+    }
+    
+    private String getActivationEventType() {
+        return "RuleFlow-Milestone-" + getProcessInstance().getProcessId()
+            + "-" + getMilestoneNode().getUniqueId();
     }
 
-    public void activationCreated(ActivationCreatedEvent event) {
+    @Override
+    public void signalEvent(String type, Object event) {
+        if (getActivationEventType().equals(type)) {
+            if (event instanceof MatchCreatedEvent) {
+                matchCreated((MatchCreatedEvent) event);
+            }
+        } else {
+            super.signalEvent(type, event);
+        }
+    }
+
+    public void matchCreated(MatchCreatedEvent event) {
         // check whether this activation is from the DROOLS_SYSTEM agenda group
-        String ruleFlowGroup = ((Rule) event.getActivation().getRule()).getRuleFlowGroup();
+        String ruleFlowGroup = ((RuleImpl) event.getMatch().getRule()).getRuleFlowGroup();
         if ("DROOLS_SYSTEM".equals(ruleFlowGroup)) {
             // new activations of the rule associate with a milestone node
             // trigger node instances of that milestone node
-            String ruleName = event.getActivation().getRule().getName();
+            String ruleName = event.getMatch().getRule().getName();
             String milestoneName = "RuleFlow-Milestone-" + getProcessInstance().getProcessId() + "-" + getNodeId();
-            if (milestoneName.equals(ruleName) && checkProcessInstance((Activation) event.getActivation())) {
-        		if ( !((InternalKnowledgeRuntime) getProcessInstance().getKnowledgeRuntime()).getActionQueue().isEmpty() ) {
-        			((InternalKnowledgeRuntime) getProcessInstance().getKnowledgeRuntime()).executeQueuedActions();
-                }
+            if (milestoneName.equals(ruleName) && checkProcessInstance((Activation) event.getMatch())) {
             	synchronized(getProcessInstance()) {
 	                removeEventListeners();
 	                triggerCompleted();
@@ -96,11 +113,11 @@ public class MilestoneNodeInstance extends StateBasedNodeInstance implements Age
         }
     }
 
-    public void activationCancelled(ActivationCancelledEvent event) {
+    public void matchCancelled(MatchCancelledEvent event) {
         // Do nothing
     }
 
-    public void afterActivationFired(AfterActivationFiredEvent event) {
+    public void afterMatchFired(AfterMatchFiredEvent event) {
         // Do nothing
     }
 
@@ -112,7 +129,7 @@ public class MilestoneNodeInstance extends StateBasedNodeInstance implements Age
         // Do nothing
     }
 
-    public void beforeActivationFired(BeforeActivationFiredEvent event) {
+    public void beforeMatchFired(BeforeMatchFiredEvent event) {
         // Do nothing
     }
 

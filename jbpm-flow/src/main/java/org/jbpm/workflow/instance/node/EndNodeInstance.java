@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,18 +16,17 @@
 
 package org.jbpm.workflow.instance.node;
 
-import org.drools.common.InternalKnowledgeRuntime;
-import org.drools.runtime.process.NodeInstance;
+import org.drools.core.common.InternalKnowledgeRuntime;
 import org.jbpm.process.instance.InternalProcessRuntime;
 import org.jbpm.process.instance.ProcessInstance;
 import org.jbpm.workflow.core.node.EndNode;
 import org.jbpm.workflow.instance.NodeInstanceContainer;
 import org.jbpm.workflow.instance.impl.ExtendedNodeInstanceImpl;
+import org.kie.api.runtime.process.NodeInstance;
 
 /**
  * Runtime counterpart of an end node.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public class EndNodeInstance extends ExtendedNodeInstanceImpl {
 
@@ -58,12 +57,12 @@ public class EndNodeInstance extends ExtendedNodeInstanceImpl {
         	    if (getEndNode().getScope() == EndNode.PROCESS_SCOPE) {
                     getProcessInstance().setState( ProcessInstance.STATE_COMPLETED );
                 } else {
-        	    
+                	while (!getNodeInstanceContainer().getNodeInstances().isEmpty()) {
+                		((org.jbpm.workflow.instance.NodeInstance) getNodeInstanceContainer().getNodeInstances().iterator().next()).cancel();
+                	}
                     ((NodeInstanceContainer) getNodeInstanceContainer()).nodeInstanceCompleted(this, null);
-            	    
                 }
         	} else {
-        	
         	    ((NodeInstanceContainer) getNodeInstanceContainer()).setState( ProcessInstance.STATE_COMPLETED );
         	}
         	

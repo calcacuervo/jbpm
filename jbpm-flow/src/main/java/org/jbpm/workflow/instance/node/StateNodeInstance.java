@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,18 +16,17 @@
 
 package org.jbpm.workflow.instance.node;
 
-import org.drools.common.InternalKnowledgeRuntime;
-import org.drools.definition.process.Connection;
-import org.drools.event.rule.ActivationCreatedEvent;
-import org.drools.runtime.process.EventListener;
-import org.drools.runtime.process.NodeInstance;
-import org.drools.runtime.rule.impl.InternalAgenda;
-import org.drools.spi.Activation;
+import org.drools.core.common.InternalAgenda;
+import org.drools.core.spi.Activation;
 import org.jbpm.workflow.core.Constraint;
 import org.jbpm.workflow.core.impl.ExtendedNodeImpl;
 import org.jbpm.workflow.core.impl.NodeImpl;
 import org.jbpm.workflow.core.node.StateNode;
 import org.jbpm.workflow.instance.NodeInstanceContainer;
+import org.kie.api.definition.process.Connection;
+import org.kie.api.event.rule.MatchCreatedEvent;
+import org.kie.api.runtime.process.EventListener;
+import org.kie.api.runtime.process.NodeInstance;
 
 public class StateNodeInstance extends CompositeContextNodeInstance implements EventListener {
 
@@ -39,7 +38,11 @@ public class StateNodeInstance extends CompositeContextNodeInstance implements E
     
 	public void internalTrigger(NodeInstance from, String type) {
 		super.internalTrigger(from, type);
-        // TODO: composite states trigger
+		// if node instance was cancelled, abort
+		if (getNodeInstanceContainer().getNodeInstance(getId()) == null) {
+			return;
+		}        
+		// TODO: composite states trigger
         StateNode stateNode = getStateNode();
         Connection selected = null;
         int priority = Integer.MAX_VALUE;
@@ -95,8 +98,8 @@ public class StateNodeInstance extends CompositeContextNodeInstance implements E
 				}
 			}
 		} else if (getActivationEventType().equals(type)) {
-			if (event instanceof ActivationCreatedEvent) {
-				activationCreated((ActivationCreatedEvent) event);
+			if (event instanceof MatchCreatedEvent) {
+				activationCreated((MatchCreatedEvent) event);
 			}
 		} else {
 			super.signalEvent(type, event);
@@ -132,23 +135,20 @@ public class StateNodeInstance extends CompositeContextNodeInstance implements E
     		+ "-" + getStateNode().getUniqueId();
     }
     
-    public void activationCreated(ActivationCreatedEvent event) {
+    public void activationCreated(MatchCreatedEvent event) {
         Connection selected = null;
         for (Connection connection: getNode().getOutgoingConnections(NodeImpl.CONNECTION_DEFAULT_TYPE)) {
             Constraint constraint = getStateNode().getConstraint(connection);
             if (constraint != null) {
 	            String constraintName =  getActivationEventType() + "-"
 	            	+ connection.getTo().getId() + "-" + connection.getToType();
-	            if (constraintName.equals(event.getActivation().getRule().getName())
-	            		&& checkProcessInstance((Activation) event.getActivation())) {
+	            if (constraintName.equals(event.getMatch().getRule().getName())
+	            		&& checkProcessInstance((Activation) event.getMatch())) {
 	            	selected = connection;
 	            }
             }
         }
         if (selected != null) {
-    		if ( !((InternalKnowledgeRuntime) getProcessInstance().getKnowledgeRuntime()).getActionQueue().isEmpty() ) {
-    			((InternalKnowledgeRuntime) getProcessInstance().getKnowledgeRuntime()).executeQueuedActions();
-            }
         	removeEventListeners();
         	((NodeInstanceContainer) getNodeInstanceContainer()).removeNodeInstance(this);
             triggerConnection(selected);

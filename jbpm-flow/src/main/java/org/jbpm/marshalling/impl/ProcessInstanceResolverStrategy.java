@@ -1,18 +1,17 @@
 /*
- * Copyright 2010 salaboy.
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * under the License.
  */
 package org.jbpm.marshalling.impl;
 
@@ -20,17 +19,18 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import org.drools.common.InternalKnowledgeRuntime;
-import org.drools.definition.process.Process;
-import org.drools.marshalling.ObjectMarshallingStrategy;
-import org.drools.marshalling.impl.MarshallerReaderContext;
-import org.drools.marshalling.impl.MarshallerWriteContext;
-import org.drools.marshalling.impl.PersisterHelper;
-import org.drools.reteoo.ReteooStatefulSession;
-import org.drools.runtime.process.ProcessInstance;
+import org.drools.core.common.InternalKnowledgeRuntime;
+import org.drools.core.common.InternalWorkingMemory;
+import org.drools.core.marshalling.impl.MarshallerReaderContext;
+import org.drools.core.marshalling.impl.MarshallerWriteContext;
+import org.drools.core.marshalling.impl.PersisterHelper;
 import org.jbpm.process.instance.ProcessInstanceManager;
 import org.jbpm.process.instance.ProcessRuntimeImpl;
 import org.jbpm.process.instance.impl.ProcessInstanceImpl;
+import org.jbpm.ruleflow.instance.RuleFlowProcessInstance;
+import org.kie.api.definition.process.Process;
+import org.kie.api.marshalling.ObjectMarshallingStrategy;
+import org.kie.api.runtime.process.ProcessInstance;
 
 /**
  * When using this strategy, knowledge session de/marshalling process will make sure that
@@ -38,7 +38,10 @@ import org.jbpm.process.instance.impl.ProcessInstanceImpl;
  * </p>
  * Instead, this strategy, which may only be used for {@link ProcessInstance} objects, 
  * saves the process instance in the {@link ProcessInstanceManager}, and later retrieves
- * it from there. 
+ * it from there.
+ * </p>
+ * Should a process instance be completed or aborted, it will be restored as an empty
+ * RuleFlowProcessInstance with correct id and state completed, yet no internal details.
  * </p>
  * If you're doing tricky things with serialization and persistence, please make sure
  * to remember that the {@link ProcessInstanceManager} cache of process instances is emptied 
@@ -71,10 +74,15 @@ public class ProcessInstanceResolverStrategy
         long processInstanceId = is.readLong();
         ProcessInstanceManager pim = retrieveProcessInstanceManager( is );
         ProcessInstance processInstance = pim.getProcessInstance( processInstanceId );
-
-        connectProcessInstanceToRuntimeAndProcess( processInstance, is );
-
-        return processInstance;
+        if (processInstance == null) {
+        	RuleFlowProcessInstance result = new RuleFlowProcessInstance();
+        	result.setId( processInstanceId );
+        	result.internalSetState(ProcessInstance.STATE_COMPLETED);
+        	return result;
+        } else {
+        	connectProcessInstanceToRuntimeAndProcess( processInstance, is );
+            return processInstance;
+        }
     }
 
     /**
@@ -88,11 +96,11 @@ public class ProcessInstanceResolverStrategy
         ProcessInstanceManager pim = null;
         if ( streamContext instanceof MarshallerWriteContext ) {
             MarshallerWriteContext context = (MarshallerWriteContext) streamContext;
-            pim = ((ProcessRuntimeImpl) ((ReteooStatefulSession) context.wm).getProcessRuntime()).getProcessInstanceManager();
+            pim = ((ProcessRuntimeImpl) ((InternalWorkingMemory) context.wm).getProcessRuntime()).getProcessInstanceManager();
         }
         else if ( streamContext instanceof MarshallerReaderContext ) {
             MarshallerReaderContext context = (MarshallerReaderContext) streamContext;
-            pim = ((ProcessRuntimeImpl) ((ReteooStatefulSession) context.wm).getProcessRuntime()).getProcessInstanceManager();
+            pim = ((ProcessRuntimeImpl) ((InternalWorkingMemory) context.wm).getProcessRuntime()).getProcessInstanceManager();
         }
         else {
             throw new UnsupportedOperationException( "Unable to retrieve " + ProcessInstanceManager.class.getSimpleName() + " from "
@@ -118,8 +126,13 @@ public class ProcessInstanceResolverStrategy
         }
         // Attach the process if not present
         if ( processInstance.getProcess() == null ) {
-            Process process = kruntime.getKnowledgeBase().getProcess( processInstance.getProcessId() );
-            processInstanceImpl.setProcess( process );
+        	String processId = processInstance.getProcessId();
+        	if (processId != null) {
+        		Process process = kruntime.getKieBase().getProcess( processId );
+        		if (process != null) {
+        			processInstanceImpl.setProcess( process );
+        		}
+        	}
         }
     }
 
@@ -137,11 +150,11 @@ public class ProcessInstanceResolverStrategy
         InternalKnowledgeRuntime kruntime = null;
         if ( streamContext instanceof MarshallerWriteContext ) {
             MarshallerWriteContext context = (MarshallerWriteContext) streamContext;
-            kruntime = ((ReteooStatefulSession) context.wm).getKnowledgeRuntime();
+            kruntime = ((InternalWorkingMemory) context.wm).getKnowledgeRuntime();
         }
         else if ( streamContext instanceof MarshallerReaderContext ) {
             MarshallerReaderContext context = (MarshallerReaderContext) streamContext;
-            kruntime = ((ReteooStatefulSession) context.wm).getKnowledgeRuntime();
+            kruntime = ((InternalWorkingMemory) context.wm).getKnowledgeRuntime();
         }
         else {
             throw new UnsupportedOperationException( "Unable to retrieve " + ProcessInstanceManager.class.getSimpleName() + " from "
@@ -165,9 +178,17 @@ public class ProcessInstanceResolverStrategy
                                                     ClassNotFoundException {
         long processInstanceId = PersisterHelper.byteArrayToLong( object );
         ProcessInstanceManager pim = retrieveProcessInstanceManager( is );
-        ProcessInstance processInstance = pim.getProcessInstance( processInstanceId );
-        connectProcessInstanceToRuntimeAndProcess( processInstance, is );
-        return processInstance;
+        // load it as read only to avoid any updates to the data base
+        ProcessInstance processInstance = pim.getProcessInstance( processInstanceId, true );
+        if (processInstance == null) {
+        	RuleFlowProcessInstance result = new RuleFlowProcessInstance();
+        	result.setId( processInstanceId );
+        	result.internalSetState(ProcessInstance.STATE_COMPLETED);
+        	return result;
+        } else {
+        	connectProcessInstanceToRuntimeAndProcess( processInstance, is );
+        	return processInstance;
+        }
     }
 
     public Context createContext() {

@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,26 +18,29 @@ package org.jbpm.workflow.core.node;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.drools.definition.process.Connection;
-import org.drools.process.core.Work;
+import org.kie.api.definition.process.Connection;
+import org.jbpm.process.core.Work;
 import org.jbpm.process.core.Context;
 import org.jbpm.process.core.ContextContainer;
 import org.jbpm.process.core.context.AbstractContext;
 import org.jbpm.process.core.context.variable.Mappable;
+import org.jbpm.process.core.impl.ContextContainerImpl;
 
 /**
  * Default implementation of a task node.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public class WorkItemNode extends StateBasedNode implements Mappable, ContextContainer {
 
 	private static final long serialVersionUID = 510l;
-	
+	// NOTE: ContetxInstances are not persisted as current functionality (exception scope) does not require it
+	private ContextContainer contextContainer = new ContextContainerImpl();
+    
 	private Work work;
 
 	private List<DataAssociation> inMapping = new LinkedList<DataAssociation>();
@@ -90,6 +93,16 @@ public class WorkItemNode extends StateBasedNode implements Mappable, ContextCon
     public void addOutMapping(String parameterName, String variableName) {
     	outMapping.add(new DataAssociation(parameterName, variableName, null, null));
     }
+    
+    public void adjustOutMapping(String forEachOutVariable) {
+    	Iterator<DataAssociation> it = outMapping.iterator();
+    	while (it.hasNext()) {
+    		DataAssociation association = it.next();
+    		if (forEachOutVariable.equals(association.getTarget())) {
+    			it.remove();
+    		}
+    	}
+    }
 
     public void setOutMappings(Map<String, String> outMapping) {
     	this.outMapping = new LinkedList<DataAssociation>();
@@ -131,46 +144,61 @@ public class WorkItemNode extends StateBasedNode implements Mappable, ContextCon
     public void validateAddIncomingConnection(final String type, final Connection connection) {
         super.validateAddIncomingConnection(type, connection);
         if (!org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE.equals(type)) {
-            throw new IllegalArgumentException(
-                "This type of node only accepts default incoming connection type!");
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getTo().getMetaData().get("UniqueId") + ", " + connection.getTo().getName() 
+                    + "] only accepts default incoming connection type!");
         }
-        if (getFrom() != null && System.getProperty("jbpm.enable.multi.con") == null) {
-            throw new IllegalArgumentException(
-                 "This type of node cannot have more than one incoming connection!");
+        if (getFrom() != null && !"true".equals(System.getProperty("jbpm.enable.multi.con"))) {
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getTo().getMetaData().get("UniqueId") + ", " + connection.getTo().getName() 
+                    + "] cannot have more than one incoming connection!");
         }
     }
 
     public void validateAddOutgoingConnection(final String type, final Connection connection) {
         super.validateAddOutgoingConnection(type, connection);
         if (!org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE.equals(type)) {
-            throw new IllegalArgumentException(
-                "This type of node only accepts default outgoing connection type!");
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getFrom().getMetaData().get("UniqueId") + ", " + connection.getFrom().getName() 
+                    + "] only accepts default outgoing connection type!");
         }
-        if (getTo() != null && System.getProperty("jbpm.enable.multi.con") == null) {
-            throw new IllegalArgumentException(
-              "This type of node cannot have more than one outgoing connection!");
+        if (getTo() != null && !"true".equals(System.getProperty("jbpm.enable.multi.con"))) {
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getFrom().getMetaData().get("UniqueId") + ", " + connection.getFrom().getName() 
+                    + "] cannot have more than one outgoing connection!");
         }
     }
     
     public List<Context> getContexts(String contextType) {
-        return ((ContextContainer)this.getNodeContainer()).getContexts(contextType);
+        return contextContainer.getContexts(contextType);
     }
     
     public void addContext(Context context) {
-        ((ContextContainer)this.getNodeContainer()).addContext(context);
         ((AbstractContext) context).setContextContainer(this);
+        contextContainer.addContext(context);
     }
     
     public Context getContext(String contextType, long id) {
-        return ((ContextContainer)this.getNodeContainer()).getContext(contextType, id);
+        return contextContainer.getContext(contextType, id);
     }
 
     public void setDefaultContext(Context context) {
-        ((ContextContainer)this.getNodeContainer()).setDefaultContext(context);
+        ((AbstractContext) context).setContextContainer(this);
+        contextContainer.setDefaultContext(context);
     }
     
     public Context getDefaultContext(String contextType) {
-        return ((ContextContainer)this.getNodeContainer()).getDefaultContext(contextType);
+        return contextContainer.getDefaultContext(contextType);
     }
+
+    @Override
+    public Context getContext(String contextId) {
+        Context context = getDefaultContext(contextId);
+        if (context != null) {
+            return context;
+        }
+        return super.getContext(contextId);
+    }
+
     
 }

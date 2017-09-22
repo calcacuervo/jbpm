@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,11 @@ package org.jbpm.bpmn2.xml;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
-import org.drools.process.core.datatype.DataType;
-import org.drools.process.core.datatype.impl.type.ObjectDataType;
-import org.drools.xml.BaseAbstractHandler;
-import org.drools.xml.ExtensibleXmlParser;
-import org.drools.xml.Handler;
+import org.drools.core.xml.BaseAbstractHandler;
+import org.drools.core.xml.ExtensibleXmlParser;
+import org.drools.core.xml.Handler;
 import org.jbpm.bpmn2.core.Association;
-import org.jbpm.bpmn2.core.ItemDefinition;
 import org.jbpm.bpmn2.core.Lane;
 import org.jbpm.bpmn2.core.SequenceFlow;
 import org.jbpm.compiler.xml.ProcessBuildData;
@@ -70,6 +66,7 @@ public class PropertyHandler extends BaseAbstractHandler implements Handler {
 		parser.startElementBuilder(localName, attrs);
 
 		final String id = attrs.getValue("id");
+		final String name = attrs.getValue("name");
 		final String itemSubjectRef = attrs.getValue("itemSubjectRef");
 
 		Object parent = parser.getParent();
@@ -79,19 +76,16 @@ public class PropertyHandler extends BaseAbstractHandler implements Handler {
                 contextContainer.getDefaultContext(VariableScope.VARIABLE_SCOPE);
 			List variables = variableScope.getVariables();
 			Variable variable = new Variable();
-			variable.setName(id);
-			// retrieve type from item definition
-			DataType dataType = new ObjectDataType();
-			Map<String, ItemDefinition> itemDefinitions = (Map<String, ItemDefinition>)
-	            ((ProcessBuildData) parser.getData()).getMetaData("ItemDefinitions");
-	        if (itemDefinitions != null) {
-	        	ItemDefinition itemDefinition = itemDefinitions.get(itemSubjectRef);
-	        	if (itemDefinition != null) {
-	        		dataType = new ObjectDataType(itemDefinition.getStructureRef());
-	        	}
-	        }
-			variable.setType(dataType);
+			// if name is given use it as variable name instead of id
+			if (name != null && name.length() > 0) {
+			    variable.setName(name);
+			} else {
+			    variable.setName(id);
+			}
+			variable.setMetaData("ItemSubjectRef", itemSubjectRef);
 			variables.add(variable);
+			
+			((ProcessBuildData) parser.getData()).setMetaData("Variable", variable);
 			return variable;
 		}
 

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.integrationtests.marshalling;
 
 import static org.junit.Assert.assertNotNull;
@@ -9,42 +25,42 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 
-import org.drools.KnowledgeBase;
-import org.drools.KnowledgeBaseFactory;
-import org.drools.builder.KnowledgeBuilder;
-import org.drools.builder.KnowledgeBuilderFactory;
-import org.drools.builder.ResourceType;
-import org.drools.common.InternalKnowledgeRuntime;
-import org.drools.common.InternalRuleBase;
-import org.drools.common.InternalWorkingMemory;
-import org.drools.impl.EnvironmentFactory;
-import org.drools.impl.InternalKnowledgeBase;
-import org.drools.impl.KnowledgeBaseImpl;
-import org.drools.impl.StatefulKnowledgeSessionImpl;
-import org.drools.io.impl.ClassPathResource;
-import org.drools.marshalling.MarshallerFactory;
-import org.drools.marshalling.ObjectMarshallingStrategy;
-import org.drools.marshalling.impl.MarshallerReaderContext;
-import org.drools.marshalling.impl.MarshallerWriteContext;
-import org.drools.marshalling.impl.MarshallingConfigurationImpl;
-import org.drools.marshalling.impl.ProtobufMarshaller;
-import org.drools.marshalling.impl.RuleBaseNodes;
-import org.drools.runtime.StatefulKnowledgeSession;
-import org.drools.runtime.process.ProcessInstance;
+import org.drools.core.common.InternalKnowledgeRuntime;
+import org.drools.core.common.InternalWorkingMemory;
+import org.drools.core.impl.EnvironmentFactory;
+import org.drools.core.impl.InternalKnowledgeBase;
+import org.drools.core.impl.KnowledgeBaseFactory;
+import org.drools.core.impl.KnowledgeBaseImpl;
+import org.drools.core.impl.StatefulKnowledgeSessionImpl;
+import org.drools.core.io.impl.ClassPathResource;
+import org.drools.core.marshalling.impl.MarshallerReaderContext;
+import org.drools.core.marshalling.impl.MarshallerWriteContext;
+import org.drools.core.marshalling.impl.MarshallingConfigurationImpl;
+import org.drools.core.marshalling.impl.ProtobufMarshaller;
+import org.drools.core.marshalling.impl.RuleBaseNodes;
 import org.jbpm.marshalling.impl.ProcessInstanceResolverStrategy;
 import org.jbpm.process.instance.ProcessInstanceManager;
 import org.jbpm.ruleflow.instance.RuleFlowProcessInstance;
+import org.jbpm.test.util.AbstractBaseTest;
 import org.jbpm.workflow.core.impl.WorkflowProcessImpl;
 import org.junit.Test;
+import org.kie.api.KieBase;
+import org.kie.api.io.ResourceType;
+import org.kie.api.marshalling.ObjectMarshallingStrategy;
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.process.ProcessInstance;
+import org.kie.internal.builder.KnowledgeBuilder;
+import org.kie.internal.builder.KnowledgeBuilderFactory;
+import org.kie.internal.marshalling.MarshallerFactory;
 
-public class ProcessInstanceResolverStrategyTest {
+public class ProcessInstanceResolverStrategyTest extends AbstractBaseTest {
 
     private final static String PROCESS_NAME = "simpleProcess.xml";
     
     @Test
     public void testAccept() {
-        KnowledgeBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
-        StatefulKnowledgeSession ksession = kbase.newStatefulKnowledgeSession();
+        KieBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
+        KieSession ksession = kbase.newKieSession();
         WorkflowProcessImpl process = new WorkflowProcessImpl();
 
         RuleFlowProcessInstance processInstance = new RuleFlowProcessInstance();
@@ -65,8 +81,8 @@ public class ProcessInstanceResolverStrategyTest {
         // Setup
         KnowledgeBuilder kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
         kbuilder.add(new ClassPathResource(PROCESS_NAME, this.getClass()), ResourceType.DRF);
-        KnowledgeBase kbase = kbuilder.newKnowledgeBase();
-        StatefulKnowledgeSession ksession = kbase.newStatefulKnowledgeSession();
+        KieBase kbase = kbuilder.newKieBase();
+        KieSession ksession = kbase.newKieSession();
         ProcessInstance processInstance = ksession.createProcessInstance("process name", new HashMap<String, Object>());
         ksession.insert(processInstance);
 
@@ -79,15 +95,16 @@ public class ProcessInstanceResolverStrategyTest {
 
         
         // Test strategy.write
-        org.drools.marshalling.MarshallingConfiguration marshallingConfig = new MarshallingConfigurationImpl(strategies, true, true);
+        org.kie.api.marshalling.MarshallingConfiguration marshallingConfig = new MarshallingConfigurationImpl(strategies, true, true);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        MarshallerWriteContext writerContext = new MarshallerWriteContext(baos,
-                                                                    (InternalRuleBase) ((InternalKnowledgeBase) kbase).getRuleBase(),
-													                (InternalWorkingMemory) ((StatefulKnowledgeSessionImpl) ksession).session,
-													                RuleBaseNodes.getNodeMap((InternalRuleBase) ((InternalKnowledgeBase) kbase).getRuleBase()),
-													                marshallingConfig.getObjectMarshallingStrategyStore(), 
-													                marshallingConfig.isMarshallProcessInstances(),
-													                marshallingConfig.isMarshallWorkItems(), ksession.getEnvironment());
+        MarshallerWriteContext writerContext 
+            = new MarshallerWriteContext(baos,
+                                         ((InternalKnowledgeBase) kbase),
+										 (InternalWorkingMemory) ((StatefulKnowledgeSessionImpl) ksession),
+										 RuleBaseNodes.getNodeMap(((InternalKnowledgeBase) kbase)),
+										 marshallingConfig.getObjectMarshallingStrategyStore(), 
+										 marshallingConfig.isMarshallProcessInstances(),
+										 marshallingConfig.isMarshallWorkItems(), ksession.getEnvironment());
 
         strategy.write(writerContext, processInstance);
         baos.close();
@@ -111,8 +128,8 @@ public class ProcessInstanceResolverStrategyTest {
         // Test strategy.read
         bais = new ByteArrayInputStream(bytes);
         MarshallerReaderContext readerContext = new MarshallerReaderContext(bais,
-                                                                            (InternalRuleBase) ((KnowledgeBaseImpl) kbase).ruleBase,
-                                                                            RuleBaseNodes.getNodeMap( (InternalRuleBase) ((KnowledgeBaseImpl) kbase).ruleBase ),
+                                                                            ((KnowledgeBaseImpl) kbase),
+                                                                            RuleBaseNodes.getNodeMap( ((KnowledgeBaseImpl) kbase)),
                                                                             marshallingConfig.getObjectMarshallingStrategyStore(),
                                                                             ProtobufMarshaller.TIMER_READERS,
                                                                             marshallingConfig.isMarshallProcessInstances(),

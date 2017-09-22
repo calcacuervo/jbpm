@@ -1,8 +1,20 @@
-/**
- * <copyright>
- * </copyright>
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
- * $Id$
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
  */
 package org.jboss.drools.impl;
 
@@ -24,6 +36,7 @@ import org.jboss.drools.DroolsFactory;
 import org.jboss.drools.DroolsPackage;
 import org.jboss.drools.GlobalType;
 import org.jboss.drools.ImportType;
+import org.jboss.drools.MetaDataType;
 import org.jboss.drools.OnEntryScriptType;
 import org.jboss.drools.OnExitScriptType;
 
@@ -56,6 +69,13 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 	 * @generated
 	 */
 	private EClass importTypeEClass = null;
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private EClass metaDataTypeEClass = null;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -238,7 +258,7 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EReference getDocumentRoot_OnEntryScript() {
+	public EReference getDocumentRoot_MetaData() {
 		return (EReference)documentRootEClass.getEStructuralFeatures().get(5);
 	}
 
@@ -247,7 +267,7 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EReference getDocumentRoot_OnExitScript() {
+	public EReference getDocumentRoot_OnEntryScript() {
 		return (EReference)documentRootEClass.getEStructuralFeatures().get(6);
 	}
 
@@ -256,8 +276,8 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EAttribute getDocumentRoot_PackageName() {
-		return (EAttribute)documentRootEClass.getEStructuralFeatures().get(7);
+	public EReference getDocumentRoot_OnExitScript() {
+		return (EReference)documentRootEClass.getEStructuralFeatures().get(7);
 	}
 
 	/**
@@ -265,7 +285,7 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EAttribute getDocumentRoot_Priority() {
+	public EAttribute getDocumentRoot_PackageName() {
 		return (EAttribute)documentRootEClass.getEStructuralFeatures().get(8);
 	}
 
@@ -274,7 +294,7 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EAttribute getDocumentRoot_RuleFlowGroup() {
+	public EAttribute getDocumentRoot_Priority() {
 		return (EAttribute)documentRootEClass.getEStructuralFeatures().get(9);
 	}
 
@@ -283,7 +303,7 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EAttribute getDocumentRoot_TaskName() {
+	public EAttribute getDocumentRoot_RuleFlowGroup() {
 		return (EAttribute)documentRootEClass.getEStructuralFeatures().get(10);
 	}
 
@@ -292,8 +312,17 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EAttribute getDocumentRoot_Version() {
+	public EAttribute getDocumentRoot_TaskName() {
 		return (EAttribute)documentRootEClass.getEStructuralFeatures().get(11);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public EAttribute getDocumentRoot_Version() {
+		return (EAttribute)documentRootEClass.getEStructuralFeatures().get(12);
 	}
 
 	/**
@@ -339,6 +368,33 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 	 */
 	public EAttribute getImportType_Name() {
 		return (EAttribute)importTypeEClass.getEStructuralFeatures().get(0);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public EClass getMetaDataType() {
+		return metaDataTypeEClass;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public EAttribute getMetaDataType_MetaValue() {
+		return (EAttribute)metaDataTypeEClass.getEStructuralFeatures().get(0);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public EAttribute getMetaDataType_Name() {
+		return (EAttribute)metaDataTypeEClass.getEStructuralFeatures().get(1);
 	}
 
 	/**
@@ -474,6 +530,7 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 		createEReference(documentRootEClass, DOCUMENT_ROOT__XSI_SCHEMA_LOCATION);
 		createEReference(documentRootEClass, DOCUMENT_ROOT__GLOBAL);
 		createEReference(documentRootEClass, DOCUMENT_ROOT__IMPORT);
+		createEReference(documentRootEClass, DOCUMENT_ROOT__META_DATA);
 		createEReference(documentRootEClass, DOCUMENT_ROOT__ON_ENTRY_SCRIPT);
 		createEReference(documentRootEClass, DOCUMENT_ROOT__ON_EXIT_SCRIPT);
 		createEAttribute(documentRootEClass, DOCUMENT_ROOT__PACKAGE_NAME);
@@ -488,6 +545,10 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 
 		importTypeEClass = createEClass(IMPORT_TYPE);
 		createEAttribute(importTypeEClass, IMPORT_TYPE__NAME);
+
+		metaDataTypeEClass = createEClass(META_DATA_TYPE);
+		createEAttribute(metaDataTypeEClass, META_DATA_TYPE__META_VALUE);
+		createEAttribute(metaDataTypeEClass, META_DATA_TYPE__NAME);
 
 		onEntryScriptTypeEClass = createEClass(ON_ENTRY_SCRIPT_TYPE);
 		createEAttribute(onEntryScriptTypeEClass, ON_ENTRY_SCRIPT_TYPE__SCRIPT);
@@ -531,6 +592,10 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 		// Obtain other dependent packages
 		XMLTypePackage theXMLTypePackage = (XMLTypePackage)EPackage.Registry.INSTANCE.getEPackage(XMLTypePackage.eNS_URI);
 
+		// Create type parameters
+
+		// Set bounds for type parameters
+
 		// Add supertypes to classes
 
 		// Initialize classes and features; add operations and parameters
@@ -540,6 +605,7 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 		initEReference(getDocumentRoot_XSISchemaLocation(), ecorePackage.getEStringToStringMapEntry(), null, "xSISchemaLocation", null, 0, -1, null, IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getDocumentRoot_Global(), this.getGlobalType(), null, "global", null, 0, -2, null, IS_TRANSIENT, IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, IS_DERIVED, IS_ORDERED);
 		initEReference(getDocumentRoot_Import(), this.getImportType(), null, "import", null, 0, -2, null, IS_TRANSIENT, IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, IS_DERIVED, IS_ORDERED);
+		initEReference(getDocumentRoot_MetaData(), this.getMetaDataType(), null, "metaData", null, 0, -2, null, IS_TRANSIENT, IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, IS_DERIVED, IS_ORDERED);
 		initEReference(getDocumentRoot_OnEntryScript(), this.getOnEntryScriptType(), null, "onEntryScript", null, 0, -2, null, IS_TRANSIENT, IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, IS_DERIVED, IS_ORDERED);
 		initEReference(getDocumentRoot_OnExitScript(), this.getOnExitScriptType(), null, "onExitScript", null, 0, -2, null, IS_TRANSIENT, IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, IS_DERIVED, IS_ORDERED);
 		initEAttribute(getDocumentRoot_PackageName(), this.getPackageNameType(), "packageName", null, 0, 1, null, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
@@ -554,6 +620,10 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 
 		initEClass(importTypeEClass, ImportType.class, "ImportType", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEAttribute(getImportType_Name(), theXMLTypePackage.getString(), "name", null, 1, 1, ImportType.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+
+		initEClass(metaDataTypeEClass, MetaDataType.class, "MetaDataType", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+		initEAttribute(getMetaDataType_MetaValue(), theXMLTypePackage.getString(), "metaValue", null, 1, 1, MetaDataType.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEAttribute(getMetaDataType_Name(), theXMLTypePackage.getString(), "name", null, 1, 1, MetaDataType.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		initEClass(onEntryScriptTypeEClass, OnEntryScriptType.class, "OnEntryScriptType", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEAttribute(getOnEntryScriptType_Script(), theXMLTypePackage.getString(), "script", null, 1, 1, OnEntryScriptType.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
@@ -628,6 +698,14 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 		   new String[] {
 			 "kind", "element",
 			 "name", "import",
+			 "namespace", "##targetNamespace"
+		   });		
+		addAnnotation
+		  (getDocumentRoot_MetaData(), 
+		   source, 
+		   new String[] {
+			 "kind", "element",
+			 "name", "metaData",
 			 "namespace", "##targetNamespace"
 		   });		
 		addAnnotation
@@ -716,6 +794,28 @@ public class DroolsPackageImpl extends EPackageImpl implements DroolsPackage {
 		   });		
 		addAnnotation
 		  (getImportType_Name(), 
+		   source, 
+		   new String[] {
+			 "kind", "attribute",
+			 "name", "name"
+		   });		
+		addAnnotation
+		  (metaDataTypeEClass, 
+		   source, 
+		   new String[] {
+			 "name", "metaData_._type",
+			 "kind", "elementOnly"
+		   });		
+		addAnnotation
+		  (getMetaDataType_MetaValue(), 
+		   source, 
+		   new String[] {
+			 "kind", "element",
+			 "name", "metaValue",
+			 "namespace", "##targetNamespace"
+		   });		
+		addAnnotation
+		  (getMetaDataType_Name(), 
 		   source, 
 		   new String[] {
 			 "kind", "attribute",

@@ -1,4 +1,4 @@
-import "org/drools/marshalling/droolsmessages.proto";
+import "org/drools/core/marshalling/droolsmessages.proto";
 
 package org.jbpm.marshalling;
 
@@ -25,7 +25,7 @@ option java_outer_classname = "JBPMMessages";
 //   fresh tag numbers (i.e. tag numbers that were never used in
 //   this protocol buffer, not even by deleted fields).
 
-extend org.drools.marshalling.ProcessData {
+extend org.drools.core.marshalling.ProcessData {
     repeated ProcessInstance process_instance = 10;
     repeated WorkItem work_item = 11;
     optional int64 timer_id = 13;
@@ -39,11 +39,19 @@ message ProcessInstance {
     optional string process_id = 3;
     optional int32 state = 4;
     optional int64 node_instance_counter = 5;
+    optional string process_xml = 11;
+    optional int64 parent_process_instance_id = 12;
+    optional string description = 15;
+    optional bool signal_completion = 16 [default = true];
+    optional string deploymentId = 17;
+    optional string correlation_key = 18;
 
     repeated SwimlaneContextInstance swimlane_context = 6;
     repeated NodeInstance node_instance = 7;
     repeated Variable variable = 8;
     repeated ExclusiveGroupInstance exclusive_group = 10;
+    repeated string completedNodeIds = 13;
+    repeated IterationLevel iterationLevels = 14;
 
     message SwimlaneContextInstance {
         optional string swimlane = 1;
@@ -54,6 +62,7 @@ message ProcessInstance {
         optional int64 id = 1;
         optional int64 node_id = 2;
         optional NodeInstanceContent content = 4;
+        optional int32 level = 5;
     }
 
     message ExclusiveGroupInstance {
@@ -74,8 +83,17 @@ message ProcessInstance {
         optional StateNode state = 10;
         optional CompositeContextNode composite = 11;
         optional ForEachNode for_each = 12;
+        optional AsyncEventNode async_event = 13;
 
-        message RuleSetNode { repeated int64 timer_instance_id = 1; }
+        message RuleSetNode {
+            repeated int64 timer_instance_id = 1;
+            repeated TextMapEntry mapEntry = 2;
+            optional string rule_flow_group = 3;
+            message TextMapEntry {
+                optional string name = 1;
+                optional string value = 2;
+            }
+        }
         message HumanTaskNode {
             optional int64 work_item_id = 1;
             repeated int64 timer_instance_id = 2;
@@ -104,9 +122,15 @@ message ProcessInstance {
             repeated Variable variable = 3;
             repeated NodeInstance node_instance = 4;
             repeated ExclusiveGroupInstance exclusive_group = 5;
+            repeated IterationLevel iterationLevels = 6;
         }
         message ForEachNode {
             repeated NodeInstance node_instance = 1;
+            repeated Variable variable = 2;
+            repeated IterationLevel iterationLevels = 3;
+        }
+        message AsyncEventNode {
+            optional string event_type = 1;
         }
     }
 
@@ -123,6 +147,8 @@ message ProcessInstance {
         COMPOSITE_CONTEXT_NODE = 9;
         FOR_EACH_NODE = 10;
         DYNAMIC_NODE = 11;
+        EVENT_SUBPROCESS_NODE = 12;
+        ASYNC_EVENT_NODE = 13;
     }
 }
 
@@ -133,7 +159,7 @@ message Variable {
     optional bytes value = 3;
 }
 
-extend org.drools.marshalling.Timers.Timer {
+extend org.drools.core.marshalling.Timers.Timer {
     optional ProcessTimer proc_timer = 100;
 }
 
@@ -144,11 +170,15 @@ message WorkItem {
     optional int32 state = 4;
 
     repeated Variable variable = 5;
+
+    optional string deployment_id = 6;
+    optional int64 node_instance_id = 7;
+    optional int64 node_id = 8;
 }
 
 message ProcessTimer {
     optional TimerInstance timer = 1;
-    optional org.drools.marshalling.Trigger trigger = 2;
+    optional org.drools.core.marshalling.Trigger trigger = 2;
 
     message TimerInstance {
         optional int64 id = 1;
@@ -158,6 +188,17 @@ message ProcessTimer {
         optional int64 process_instance_id = 5;
         optional int64 activated_time = 6;
         optional int64 last_triggered = 7;
+        optional int32 DEPRECATED_sessionId = 8;
+        optional int64 sessionId = 9;
     }
+}
+
+message IterationLevel {
+    optional string id = 1;
+    optional int32 level = 2;
+}
+
+message VariableContainer {
+    repeated Variable variable = 1;
 }
 

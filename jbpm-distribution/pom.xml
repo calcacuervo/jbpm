@@ -6,13 +6,13 @@
   <parent>
     <groupId>org.jbpm</groupId>
     <artifactId>jbpm</artifactId>
-    <version>5.4.0-SNAPSHOT</version>
+    <version>8.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>jbpm-distribution</artifactId>
   <packaging>pom</packaging>
 
-  <name>jBPM distribution</name>
+  <name>jBPM :: Distribution</name>
   <description>
     Builds the download zip of jBPM.
   </description>
@@ -34,7 +34,7 @@
               <includeDependencySources>true</includeDependencySources>
               <dependencySourceIncludes>
                 <dependencySourceInclude>org.jbpm:*</dependencySourceInclude>
-                <dependencySourceInclude>org.drools:knowledge-api</dependencySourceInclude>
+                <dependencySourceInclude>org.kie:kie-api</dependencySourceInclude>
               </dependencySourceIncludes>
             </configuration>
           </execution>
@@ -45,29 +45,25 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
+            <id>zips</id>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
+            <configuration>
+              <finalName>jbpm-${project.version}</finalName>
+              <descriptors>
+                <!-- basic zips -->
+                <descriptor>src/main/assembly/pre-bin.xml</descriptor>
+                <descriptor>src/main/assembly/bin.xml</descriptor>
+                <descriptor>src/main/assembly/src.xml</descriptor>
+                <descriptor>src/main/assembly/assembly-jbpm.xml</descriptor>
+                <!-- examples -->
+                <descriptor>src/main/assembly/examples.xml</descriptor>
+              </descriptors>
+            </configuration>
           </execution>
         </executions>
-        <configuration>
-          <finalName>jbpm-${project.version}</finalName>
-          <descriptors>
-            <descriptor>src/main/assembly/pre-bin.xml</descriptor>
-            <descriptor>src/main/assembly/bin.xml</descriptor>
-            <descriptor>src/main/assembly/src.xml</descriptor>
-            <descriptor>src/main/assembly/gwt-console.xml</descriptor>
-            <!--descriptor>src/main/assembly/form-builder.xml</descriptor-->
-            <descriptor>src/main/assembly/human-task-war.xml</descriptor>
-            <descriptor>src/main/assembly/installer.xml</descriptor>
-            <descriptor>src/main/assembly/docs-build.xml</descriptor>
-            <descriptor>src/main/assembly/docs.xml</descriptor>
-            <descriptor>src/main/assembly/examples.xml</descriptor>
-            <descriptor>src/main/assembly/assembly-jbpm.xml</descriptor>
-          </descriptors>
-          <!--<appendAssemblyId>false</appendAssemblyId>-->
-        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -121,11 +117,209 @@
     </dependency>
     <dependency>
       <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-bam</artifactId>
+      <artifactId>jbpm-audit</artifactId>
     </dependency>
     <dependency>
       <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-bam</artifactId>
+      <artifactId>jbpm-audit</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-core</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-archive</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-archive</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-bpmn2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-bpmn2</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-email</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-email</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-exec</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-exec</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-ftp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-ftp</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-jabber</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-jabber</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-java</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-jms</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-jms</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-jpa</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-parser</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-parser</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-rest</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-rest</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-rss</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-rss</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-transform</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-transform</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-webservice</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-workitems-webservice</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-services-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-services-api</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-kie-services</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-kie-services</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-services-cdi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-services-cdi</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-services-ejb-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-services-ejb-api</artifactId>
+      <classifier>sources</classifier>
+    </dependency>    
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-services-ejb-impl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-services-ejb-impl</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-services-ejb-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-services-ejb-client</artifactId>
+      <classifier>sources</classifier>
+    </dependency>    
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-executor</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-executor</artifactId>
       <classifier>sources</classifier>
     </dependency>
     <dependency>
@@ -134,43 +328,43 @@
     </dependency>
     <dependency>
       <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-human-task-mina</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-human-task-hornetq</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-human-task-jms</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jbpm</groupId>
       <artifactId>jbpm-human-task-core</artifactId>
       <classifier>sources</classifier>
     </dependency>
     <dependency>
       <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-human-task-mina</artifactId>
+      <artifactId>jbpm-human-task-workitems</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-human-task-workitems</artifactId>
       <classifier>sources</classifier>
     </dependency>
     <dependency>
       <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-human-task-hornetq</artifactId>
+      <artifactId>jbpm-human-task-audit</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-human-task-audit</artifactId>
       <classifier>sources</classifier>
     </dependency>
     <dependency>
       <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-human-task-jms</artifactId>
+      <artifactId>jbpm-human-task-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-human-task-jpa</artifactId>
       <classifier>sources</classifier>
     </dependency>
     <dependency>
       <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-workitems</artifactId>
+      <artifactId>jbpm-shared-services</artifactId>
     </dependency>
     <dependency>
       <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-workitems</artifactId>
+      <artifactId>jbpm-shared-services</artifactId>
       <classifier>sources</classifier>
     </dependency>
     <dependency>
@@ -184,8 +378,12 @@
     </dependency>
     <dependency>
       <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-human-task-war</artifactId>
-      <type>war</type>
+      <artifactId>jbpm-runtime-manager</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-runtime-manager</artifactId>
+      <classifier>sources</classifier>
     </dependency>
     
     <!-- The old assembly also included this optional dependency -->
@@ -198,27 +396,37 @@
       <artifactId>h2</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.codehaus.btm</groupId>
-      <artifactId>btm</artifactId>
+      <groupId>org.jboss.narayana.jta</groupId>
+      <artifactId>narayana-jta</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
+      <groupId>javax.enterprise</groupId>
+      <artifactId>cdi-api</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.el</groupId>
+          <artifactId>javax.el-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.interceptor</groupId>
+          <artifactId>javax.interceptor-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <!-- Replacement for the above excluded javax.interceptor:javax.interceptor-api -->
+      <groupId>org.jboss.spec.javax.interceptor</groupId>
+      <artifactId>jboss-interceptors-api_1.2_spec</artifactId>
     </dependency>
 
     <!-- Javadocs and documentation -->
-    <dependency>
-      <groupId>org.jbpm</groupId>
-      <artifactId>jbpm-docs</artifactId>
-      <type>jdocbook</type>
-    </dependency>
     <dependency><!-- Workaround for http://jira.codehaus.org/browse/MJAVADOC-340 -->
-      <groupId>org.apache.felix</groupId>
+      <groupId>org.osgi</groupId>
       <artifactId>org.osgi.core</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency><!-- Workaround for http://jira.codehaus.org/browse/MJAVADOC-340 -->
-      <groupId>org.apache.felix</groupId>
+      <groupId>org.osgi</groupId>
       <artifactId>org.osgi.compendium</artifactId>
       <scope>provided</scope>
     </dependency>
@@ -227,6 +435,10 @@
       <artifactId>junit</artifactId>
       <scope>provided</scope>
     </dependency>
+     <dependency><!-- Workaround, maybe for http://jira.codehaus.org/browse/MJAVADOC-340 -->
+      <groupId>org.jboss.spec.javax.ejb</groupId>
+      <artifactId>jboss-ejb-api_3.2_spec</artifactId>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
-
 </project>

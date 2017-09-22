@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,15 +20,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import org.drools.xml.BaseAbstractHandler;
-import org.drools.xml.ExtensibleXmlParser;
-import org.drools.xml.Handler;
-import org.jbpm.bpmn2.core.DataStore;
-import org.jbpm.bpmn2.core.Definitions;
-import org.jbpm.bpmn2.core.Escalation;
-import org.jbpm.bpmn2.core.Interface;
-import org.jbpm.bpmn2.core.ItemDefinition;
-import org.jbpm.bpmn2.core.Message;
+import org.drools.core.xml.BaseAbstractHandler;
+import org.drools.core.xml.ExtensibleXmlParser;
+import org.drools.core.xml.Handler;
+import org.jbpm.bpmn2.core.*;
+import org.jbpm.bpmn2.core.Error;
 import org.jbpm.compiler.xml.ProcessBuildData;
 import org.jbpm.ruleflow.core.RuleFlowProcess;
 import org.xml.sax.Attributes;
@@ -49,6 +45,7 @@ public class MessageHandler extends BaseAbstractHandler implements Handler {
             this.validPeers.add(Interface.class);
             this.validPeers.add(Escalation.class);
             this.validPeers.add(Error.class);
+            this.validPeers.add(Signal.class);
             this.validPeers.add(DataStore.class);
             this.validPeers.add(RuleFlowProcess.class);
             

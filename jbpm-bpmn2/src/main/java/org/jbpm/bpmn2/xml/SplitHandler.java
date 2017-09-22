@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -37,14 +37,17 @@ public class SplitHandler extends AbstractNodeHandler {
 
 	public void writeNode(Node node, StringBuilder xmlDump, int metaDataType) {
 		Split split = (Split) node;
+		String type = null;
 		switch (split.getType()) {
 			case Split.TYPE_AND:
-				writeNode("parallelGateway", node, xmlDump, metaDataType);
+				type = "parallelGateway";
+				writeNode(type, node, xmlDump, metaDataType);
 				break;
 			case Split.TYPE_XOR:
-				writeNode("exclusiveGateway", node, xmlDump, metaDataType);
+				type = "exclusiveGateway";
+				writeNode(type, node, xmlDump, metaDataType);
 				for (Map.Entry<ConnectionRef, Constraint> entry: split.getConstraints().entrySet()) {
-					if (entry.getValue().isDefault()) {
+					if (entry.getValue() != null && entry.getValue().isDefault()) {
 						xmlDump.append("default=\"" +
 							XmlBPMNProcessDumper.getUniqueNodeId(split) + "-" +
 							XmlBPMNProcessDumper.getUniqueNodeId(node.getNodeContainer().getNode(entry.getKey().getNodeId())) + 
@@ -54,9 +57,10 @@ public class SplitHandler extends AbstractNodeHandler {
 				}
 				break;
 			case Split.TYPE_OR:
-                writeNode("inclusiveGateway", node, xmlDump, metaDataType);
+				type = "inclusiveGateway";
+                writeNode(type, node, xmlDump, metaDataType);
 				for (Map.Entry<ConnectionRef, Constraint> entry: split.getConstraints().entrySet()) {
-					if (entry.getValue().isDefault()) {
+					if (entry.getValue() != null && entry.getValue().isDefault()) {
 						xmlDump.append("default=\"" +
 							XmlBPMNProcessDumper.getUniqueNodeId(split) + "-" +
 							XmlBPMNProcessDumper.getUniqueNodeId(node.getNodeContainer().getNode(entry.getKey().getNodeId())) + 
@@ -66,13 +70,16 @@ public class SplitHandler extends AbstractNodeHandler {
 				}
                 break;
 			case Split.TYPE_XAND:
-				writeNode("eventBasedGateway", node, xmlDump, metaDataType);
+				type = "eventBasedGateway";
+				writeNode(type, node, xmlDump, metaDataType);
 				break;
             default:
-				writeNode("complexGateway", node, xmlDump, metaDataType);
+            	type = "complexGateway";
+				writeNode(type, node, xmlDump, metaDataType);
 		}
-		xmlDump.append("gatewayDirection=\"Diverging\" ");
-		endNode(xmlDump);
+		xmlDump.append("gatewayDirection=\"Diverging\" >" + EOL);
+		writeExtensionElements(node, xmlDump);
+		endNode(type, xmlDump);
 	}
 
 }

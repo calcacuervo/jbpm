@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,10 @@
 
 package org.jbpm.workflow.instance;
 
-import org.drools.definition.process.Node;
+import org.kie.api.definition.process.Node;
+
+import java.util.Map;
+
 import org.jbpm.process.instance.ContextInstance;
 
 /**
@@ -25,16 +28,19 @@ import org.jbpm.process.instance.ContextInstance;
  * contain the logic on what to do when it is being triggered (start
  * executing) or completed (end of execution).
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
-public interface NodeInstance extends org.drools.runtime.process.NodeInstance {
+public interface NodeInstance extends org.kie.api.runtime.process.NodeInstance {
 
-    void trigger(org.drools.runtime.process.NodeInstance from, String type);
+    void trigger(org.kie.api.runtime.process.NodeInstance from, String type);
 
     void cancel();
     
     Node getNode();
     
     ContextInstance resolveContextInstance(String contextId, Object param);
+    
+    int getLevel();
+    
+    void setDynamicParameters(Map<String, Object> dynamicParameters);
     
 }

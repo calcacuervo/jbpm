@@ -1,12 +1,12 @@
 /*
- * Copyright 2005 JBoss Inc
- * 
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,7 +27,6 @@ import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Iterator;
 
-
 import javax.xml.transform.Result;
 import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
@@ -35,25 +34,28 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /*******************************************************************************
  * Class the migrates drools version 4 .rfm and .rf ruleflow files to version
  * 5 .rf and .rfm ruleflows.
  * 
- * @author <a href="mailto:author@acme.com">A.N Author</a>
  ******************************************************************************/
 public class RuleFlowMigrator 
 {
+    private static final Logger logger = LoggerFactory.getLogger(RuleFlowMigrator.class);
     /**
      * XSL file that transforms drools 4 .rfm ruleflow files to version 5
      */
-    private static final String  XSL_RFM_FROM_4_TO_5 = "/org/drools/compiler/xml/processes/RuleFlowFrom4To5.xsl";
+    private static final String  XSL_RFM_FROM_4_TO_5 = "/org/drools/compiler/compiler/xml/processes/RuleFlowFrom4To5.xsl";
     
     /**
      * XSL file that transforms drools 4 .rf (graphical) ruleflow files to 
      * version 5
      */
-    private static final String  XSL_RF_FROM_4_TO_5  = "/org/drools/compiler/xml/processes/RuleFlowGraphicalFrom4To5.xsl";
+    private static final String  XSL_RF_FROM_4_TO_5  = "/org/drools/compiler/compiler/xml/processes/RuleFlowGraphicalFrom4To5.xsl";
     
     /**
      * String containing namespace header for migrtated ruleflow files
@@ -187,7 +189,7 @@ public class RuleFlowMigrator
         {
             if (args.length != 2)
             {
-                System.out.println("usage: RuleFileMigrator source_file dest_file");
+                logger.info("usage: RuleFileMigrator source_file dest_file");
                 System.exit(1);
             }
             
@@ -204,7 +206,7 @@ public class RuleFlowMigrator
         	
         	if (result != null)
         	{
-        		System.out.println("Ruleflow migrated from version 4.0 to 5.0");
+        	    logger.info("Ruleflow migrated from version 4.0 to 5.0");
         		FileWriter fw = new FileWriter(outFile);
         		fw.write(result);
         		fw.flush();
@@ -212,7 +214,7 @@ public class RuleFlowMigrator
         	}
         	else
         	{
-        		System.out.println("No Ruleflow Migration Reguired - Ruleflow is version 5.0");
+        	    logger.info("No Ruleflow Migration Reguired - Ruleflow is version 5.0");
         	}
         } 
         catch (Throwable t) 
@@ -226,7 +228,6 @@ public class RuleFlowMigrator
      * This class transform a string using an XSL transform - moved verbatim
      * from the ProcessBuilder class.
      * 
-     * @author 
      ******************************************************************************/
     private static class XSLTransformation {
         public static String transform(String stylesheet,

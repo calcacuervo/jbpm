@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.integrationtests;
 
 import java.io.Reader;
@@ -7,33 +23,37 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.drools.KnowledgeBase;
-import org.drools.RuleBase;
-import org.drools.RuleBaseFactory;
-import org.drools.WorkingMemory;
-import org.drools.builder.KnowledgeBuilder;
-import org.drools.builder.KnowledgeBuilderFactory;
-import org.drools.builder.ResourceType;
-import org.drools.compiler.DroolsError;
-import org.drools.compiler.PackageBuilder;
-import org.drools.io.ResourceFactory;
-import org.drools.logger.KnowledgeRuntimeLogger;
-import org.drools.logger.KnowledgeRuntimeLoggerFactory;
-import org.drools.rule.Package;
-import org.drools.runtime.StatefulKnowledgeSession;
-import org.drools.runtime.process.WorkItem;
-import org.drools.runtime.process.WorkItemHandler;
-import org.drools.runtime.process.WorkItemManager;
-import org.drools.runtime.process.WorkflowProcessInstance;
-import org.jbpm.JbpmTestCase;
+import org.drools.compiler.compiler.DroolsError;
+import org.drools.core.definitions.InternalKnowledgePackage;
+import org.jbpm.integrationtests.handler.TestWorkItemHandler;
 import org.jbpm.process.instance.ProcessInstance;
+import org.jbpm.test.util.AbstractBaseTest;
 import org.jbpm.workflow.instance.node.DynamicNodeInstance;
 import org.jbpm.workflow.instance.node.DynamicUtils;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.kie.api.KieBase;
+import org.kie.api.io.ResourceType;
+import org.kie.api.logger.KieRuntimeLogger;
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.process.WorkItem;
+import org.kie.api.runtime.process.WorkflowProcessInstance;
+import org.kie.internal.builder.KnowledgeBuilder;
+import org.kie.internal.builder.KnowledgeBuilderFactory;
+import org.kie.internal.io.ResourceFactory;
+import org.kie.internal.logger.KnowledgeRuntimeLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ProcessDynamicNodeTest extends JbpmTestCase {
+import static org.junit.Assert.*;
+
+public class ProcessDynamicNodeTest extends AbstractBaseTest {
     
+    private static final Logger logger = LoggerFactory.getLogger(ProcessDynamicNodeTest.class);
+    
+    @Test
+    @Ignore
     public void TODOtestDynamicActions() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -84,23 +104,22 @@ public class ProcessDynamicNodeTest extends JbpmTestCase {
             "  </connections>\n" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
         for (DroolsError error: builder.getErrors().getErrors()) {
-        	System.err.println(error);
+            logger.error(error.toString());
         }
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+        
+        KieSession ksession = createKieSession(builder.getPackages());
+        
         List<String> list = new ArrayList<String>();
-        workingMemory.setGlobal("list", list);
-        ProcessInstance processInstance = ( ProcessInstance )
-            workingMemory.startProcess("org.drools.dynamic");
+        ksession.setGlobal("list", list);
+        ProcessInstance processInstance = ( ProcessInstance ) ksession.startProcess("org.drools.dynamic");
         assertEquals(ProcessInstance.STATE_COMPLETED, processInstance.getState());
         assertEquals(4, list.size());
     }
 
+    @Test
+    @Ignore
     public void TODOtestDynamicAsyncActions() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -150,28 +169,27 @@ public class ProcessDynamicNodeTest extends JbpmTestCase {
             "  </connections>\n" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
         for (DroolsError error: builder.getErrors().getErrors()) {
-        	System.err.println(error);
+            logger.error(error.toString());
         }
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+        
+        KieSession ksession = createKieSession(builder.getPackages());
+        
         List<String> list = new ArrayList<String>();
-        workingMemory.setGlobal("list", list);
+        ksession.setGlobal("list", list);
         TestWorkItemHandler testHandler = new TestWorkItemHandler();
-        workingMemory.getWorkItemManager().registerWorkItemHandler("Work", testHandler);
-        ProcessInstance processInstance = ( ProcessInstance )
-            workingMemory.startProcess("org.drools.dynamic");
+        ksession.getWorkItemManager().registerWorkItemHandler("Work", testHandler);
+        ProcessInstance processInstance = ( ProcessInstance ) ksession.startProcess("org.drools.dynamic");
         assertEquals(ProcessInstance.STATE_ACTIVE, processInstance.getState());
         assertEquals(1, list.size());
         WorkItem workItem = testHandler.getWorkItem(); 
         assertNotNull(workItem);
-        workingMemory.getWorkItemManager().completeWorkItem(workItem.getId(), null);
+        ksession.getWorkItemManager().completeWorkItem(workItem.getId(), null);
         assertEquals(ProcessInstance.STATE_COMPLETED, processInstance.getState());
         assertEquals(3, list.size());
     }
     
+    @Test
     public void testAddDynamicWorkItem() {
     	Reader source = new StringReader(
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
@@ -206,9 +224,9 @@ public class ProcessDynamicNodeTest extends JbpmTestCase {
                 "</process>");
     	KnowledgeBuilder kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
 		kbuilder.add(ResourceFactory.newReaderResource(source), ResourceType.DRF);
-		KnowledgeBase kbase = kbuilder.newKnowledgeBase();
-		StatefulKnowledgeSession ksession = kbase.newStatefulKnowledgeSession();
-		KnowledgeRuntimeLogger logger = KnowledgeRuntimeLoggerFactory.newFileLogger(ksession, "test");
+		KieBase kbase = kbuilder.newKieBase();
+		KieSession ksession = kbase.newKieSession();
+		KieRuntimeLogger logger = KnowledgeRuntimeLoggerFactory.newFileLogger(ksession, "test");
 		TestWorkItemHandler handler = new TestWorkItemHandler();
 		ksession.getWorkItemManager().registerWorkItemHandler("Human Task", handler);
 		// start a new process instance
@@ -225,6 +243,7 @@ public class ProcessDynamicNodeTest extends JbpmTestCase {
 		logger.close();
     }
 
+    @Test
     public void testAddDynamicSubProcess() {
     	Reader source = new StringReader(
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
@@ -267,7 +286,7 @@ public class ProcessDynamicNodeTest extends JbpmTestCase {
                 "  <header>\n" +
         		"    <variables>\n" +
         		"      <variable name=\"x\" >\n" +
-        		"        <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+        		"        <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
         		"        <value>SomeText</value>\n" +
         		"      </variable>\n" +
         		"    </variables>\n" +
@@ -293,9 +312,9 @@ public class ProcessDynamicNodeTest extends JbpmTestCase {
     	KnowledgeBuilder kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
 		kbuilder.add(ResourceFactory.newReaderResource(source), ResourceType.DRF);
 		kbuilder.add(ResourceFactory.newReaderResource(source2), ResourceType.DRF);
-		KnowledgeBase kbase = kbuilder.newKnowledgeBase();
-		StatefulKnowledgeSession ksession = kbase.newStatefulKnowledgeSession();
-		KnowledgeRuntimeLogger logger = KnowledgeRuntimeLoggerFactory.newFileLogger(ksession, "test");
+		KieBase kbase = kbuilder.newKieBase();
+		KieSession ksession = kbase.newKieSession();
+		KieRuntimeLogger logger = KnowledgeRuntimeLoggerFactory.newFileLogger(ksession, "test");
 		TestWorkItemHandler handler = new TestWorkItemHandler();
 		ksession.getWorkItemManager().registerWorkItemHandler("Human Task", handler);
 		// start a new process instance
@@ -312,16 +331,4 @@ public class ProcessDynamicNodeTest extends JbpmTestCase {
 		logger.close();
     }
 
-    private static class TestWorkItemHandler implements WorkItemHandler {
-        private WorkItem workItem;
-        public void executeWorkItem(WorkItem workItem, WorkItemManager manager) {
-            this.workItem = workItem;
-        }
-        public void abortWorkItem(WorkItem workItem, WorkItemManager manager) {
-        }
-        public WorkItem getWorkItem() {
-            return workItem;
-        }
-    }
-    
 }

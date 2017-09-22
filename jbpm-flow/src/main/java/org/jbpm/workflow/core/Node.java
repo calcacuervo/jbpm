@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,16 +18,15 @@ package org.jbpm.workflow.core;
 
 import java.io.Serializable;
 
-import org.drools.definition.process.Connection;
-import org.drools.definition.process.NodeContainer;
+import org.kie.api.definition.process.Connection;
+import org.kie.api.definition.process.NodeContainer;
 import org.jbpm.process.core.Contextable;
 
 /**
  * Represents a node in a RuleFlow. 
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
-public interface Node extends org.drools.definition.process.Node, Contextable, Serializable {
+public interface Node extends org.kie.api.definition.process.Node, Contextable, Serializable {
 
     static final String CONNECTION_DEFAULT_TYPE = "DROOLS_DEFAULT";
     

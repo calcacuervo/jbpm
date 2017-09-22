@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,16 @@
 
 package org.jbpm.bpmn2.xml;
 
-import org.drools.compiler.xml.XmlDumper;
+import java.util.List;
+
+import org.drools.compiler.compiler.xml.XmlDumper;
+import org.jbpm.bpmn2.core.Definitions;
+import org.jbpm.bpmn2.core.Error;
 import org.jbpm.process.core.event.EventTypeFilter;
+import org.jbpm.ruleflow.core.RuleFlowProcess;
 import org.jbpm.workflow.core.Node;
 import org.jbpm.workflow.core.node.EventNode;
+import org.kie.api.definition.process.NodeContainer;
 import org.xml.sax.Attributes;
 
 public class EventNodeHandler extends AbstractNodeHandler {
@@ -39,17 +45,8 @@ public class EventNodeHandler extends AbstractNodeHandler {
 		if (attachedTo == null) {
     		writeNode("intermediateCatchEvent", eventNode, xmlDump, metaDataType);
     		xmlDump.append(">" + EOL);
-    		if (eventNode.getVariableName() != null) {
-    			xmlDump.append("      <dataOutput id=\"" + XmlBPMNProcessDumper.getUniqueNodeId(eventNode) + "_Output\" name=\"event\" />" + EOL);
-    			xmlDump.append("      <dataOutputAssociation>" + EOL);
-    			xmlDump.append(
-    				"      <sourceRef>" + XmlBPMNProcessDumper.getUniqueNodeId(eventNode) + "_Output</sourceRef>" + EOL +
-    				"      <targetRef>" + XmlDumper.replaceIllegalChars(eventNode.getVariableName()) + "</targetRef>" + EOL);
-    			xmlDump.append("      </dataOutputAssociation>" + EOL);
-    			xmlDump.append("      <outputSet>" + EOL);
-    			xmlDump.append("        <dataOutputRefs>" + XmlBPMNProcessDumper.getUniqueNodeId(eventNode) + "_Output</dataOutputRefs>" + EOL);
-    			xmlDump.append("      </outputSet>" + EOL);
-    		}
+            writeExtensionElements(eventNode, xmlDump);
+            writeVariableName(eventNode, xmlDump);
     		if (eventNode.getEventFilters().size() > 0) {
     			String type = ((EventTypeFilter) eventNode.getEventFilters().get(0)).getType();
     			if (type.startsWith("Message-")) {
@@ -78,7 +75,8 @@ public class EventNodeHandler extends AbstractNodeHandler {
                 writeNode("boundaryEvent", eventNode, xmlDump, metaDataType);
                 xmlDump.append("attachedToRef=\"" + attachedTo + "\" ");
                 xmlDump.append(">" + EOL);
-                xmlDump.append("      <errorEventDefinition errorRef=\"" + XmlBPMNProcessDumper.replaceIllegalCharsAttribute(type) + "\" />" + EOL);
+                String errorId = getErrorIdForErrorCode(type, eventNode);
+                xmlDump.append("      <errorEventDefinition errorRef=\"" + XmlBPMNProcessDumper.replaceIllegalCharsAttribute(errorId) + "\" />" + EOL);
                 endNode("boundaryEvent", xmlDump);
             } else if (type.startsWith("Timer-")) {
                 type = type.substring(attachedTo.length() + 7);
@@ -109,13 +107,6 @@ public class EventNodeHandler extends AbstractNodeHandler {
                             "        <timeCycle xsi:type=\"tFormalExpression\">" + XmlDumper.replaceIllegalChars(cycle) + "</timeCycle>" + EOL +
                             "      </timerEventDefinition>" + EOL);
                 }
-                endNode("boundaryEvent", xmlDump);
-            } else if (type.startsWith("Compensate-")) {
-                type = type.substring(attachedTo.length() + 7);
-                writeNode("boundaryEvent", eventNode, xmlDump, metaDataType);
-                xmlDump.append("attachedToRef=\"" + attachedTo + "\" ");
-                xmlDump.append(">" + EOL);
-                xmlDump.append("      <compensateEventDefinition/>" + EOL);
                 endNode("boundaryEvent", xmlDump);
             }  else if (node.getMetaData().get("SignalName") != null) {
                 
@@ -148,6 +139,8 @@ public class EventNodeHandler extends AbstractNodeHandler {
                 xmlDump.append(">" + EOL);
                 xmlDump.append("      <messageEventDefinition messageRef=\"" + type + "\"/>" + EOL);
                 endNode("boundaryEvent", xmlDump);
+            } else { 
+                throw new IllegalArgumentException("Unknown boundary event type: \"" + type + "\"");
             }
 		}
 	}

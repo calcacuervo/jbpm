@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,6 +32,7 @@ import org.jboss.drools.DroolsFactory;
 import org.jboss.drools.DroolsPackage;
 import org.jboss.drools.GlobalType;
 import org.jboss.drools.ImportType;
+import org.jboss.drools.MetaDataType;
 import org.jboss.drools.OnEntryScriptType;
 import org.jboss.drools.OnExitScriptType;
 import org.jboss.drools.util.DroolsResourceFactoryImpl;
@@ -55,6 +56,45 @@ public class BPMN2EmfExtTest extends TestCase {
     
     @Override
     protected void tearDown() throws Exception {
+    }
+    
+    @SuppressWarnings("unchecked")
+	public void testMetadataElement() throws Exception {
+    	// write
+    	XMLResource inResource = (XMLResource) resourceSet.createResource(URI.createURI("inputStream://dummyUriWithValidSuffix.xml"));
+        inResource.getDefaultLoadOptions().put(XMLResource.OPTION_ENCODING, "UTF-8");
+        inResource.setEncoding("UTF-8");
+        DocumentRoot documentRoot = DroolsFactory.eINSTANCE.createDocumentRoot();
+        
+        MetaDataType metadataType =  DroolsFactory.eINSTANCE.createMetaDataType();
+        metadataType.setName("testvalue");
+        metadataType.setMetaValue("testentry"); 
+        
+        documentRoot.setMetaData(metadataType);
+        inResource.getContents().add(documentRoot);
+        
+        StringWriter stringWriter = new StringWriter();
+        inResource.save(stringWriter, null);
+        assertNotNull(stringWriter.getBuffer().toString());
+        if(stringWriter.getBuffer().toString().length() < 1) {
+            fail("generated xml is empty");
+        }
+    	
+        // read
+        XMLResource outResource = (XMLResource) resourceSet.createResource(URI.createURI("inputStream://dummyUriWithValidSuffix.xml"));
+        outResource.getDefaultLoadOptions().put(XMLResource.OPTION_ENCODING, "UTF-8");
+        outResource.setEncoding("UTF-8");
+        Map<String, Object> options = new HashMap<String, Object>();
+        options.put( XMLResource.OPTION_ENCODING, "UTF-8" );
+        InputStream is = new ByteArrayInputStream(stringWriter.getBuffer().toString().getBytes("UTF-8"));
+        outResource.load(is, options);
+        
+        DocumentRoot outRoot = (DocumentRoot) outResource.getContents().get(0);
+        assertNotNull(outRoot.getMetaData());
+        MetaDataType outMetadataType =  outRoot.getMetaData();
+        assertEquals(outMetadataType.getName(), "testvalue");
+        assertEquals(outMetadataType.getMetaValue(), "testentry");
+        
     }
     
     public void testOnEntryScriptElement() throws Exception {

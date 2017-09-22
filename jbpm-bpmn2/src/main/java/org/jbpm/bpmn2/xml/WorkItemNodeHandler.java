@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,7 @@ package org.jbpm.bpmn2.xml;
 
 import java.util.Map;
 
-import org.drools.compiler.xml.XmlDumper;
+import org.drools.compiler.compiler.xml.XmlDumper;
 import org.jbpm.workflow.core.Node;
 import org.jbpm.workflow.core.node.WorkItemNode;
 import org.xml.sax.Attributes;
@@ -40,15 +40,19 @@ public class WorkItemNodeHandler extends AbstractNodeHandler {
 		if ("Manual Task".equals(type)) {
 		    writeNode("manualTask", workItemNode, xmlDump, metaDataType);
 		    xmlDump.append(">" + EOL);
-			writeScripts(workItemNode, xmlDump);
+			writeExtensionElements(workItemNode, xmlDump);
 	        endNode("manualTask", xmlDump);
 	        return;
 		} 
         if ("Service Task".equals(type)) {
             writeNode("serviceTask", workItemNode, xmlDump, metaDataType);
+            String impl = "Other";
+            if (workItemNode.getWork().getParameter("implementation") != null) {
+                impl = (String) workItemNode.getWork().getParameter("implementation");
+            }
             xmlDump.append("operationRef=\"" + 
-                XmlBPMNProcessDumper.getUniqueNodeId(workItemNode) + "_ServiceOperation\" implementation=\"Other\" >" + EOL);
-    		writeScripts(workItemNode, xmlDump);
+                XmlBPMNProcessDumper.getUniqueNodeId(workItemNode) + "_ServiceOperation\" implementation=\""+impl+"\" >" + EOL);
+    		writeExtensionElements(workItemNode, xmlDump);
     		xmlDump.append(
                 "      <ioSpecification>" + EOL +
                 "        <dataInput id=\"" + XmlBPMNProcessDumper.getUniqueNodeId(workItemNode) + "_param\" name=\"Parameter\" />" + EOL +
@@ -83,7 +87,7 @@ public class WorkItemNodeHandler extends AbstractNodeHandler {
             writeNode("sendTask", workItemNode, xmlDump, metaDataType);
             xmlDump.append("messageRef=\"" + 
                 XmlBPMNProcessDumper.getUniqueNodeId(workItemNode) + "_Message\" implementation=\"Other\" >" + EOL);
-    		writeScripts(workItemNode, xmlDump);
+    		writeExtensionElements(workItemNode, xmlDump);
     		xmlDump.append(
                 "      <ioSpecification>" + EOL +
                 "        <dataInput id=\"" + XmlBPMNProcessDumper.getUniqueNodeId(workItemNode) + "_param\" name=\"Message\" />" + EOL +
@@ -108,7 +112,7 @@ public class WorkItemNodeHandler extends AbstractNodeHandler {
             String messageId = (String) workItemNode.getWork().getParameter("MessageId");
             xmlDump.append("messageRef=\"" + 
                 messageId + "\" implementation=\"Other\" >" + EOL);
-    		writeScripts(workItemNode, xmlDump);
+    		writeExtensionElements(workItemNode, xmlDump);
     		xmlDump.append(
                 "      <ioSpecification>" + EOL +
                 "        <dataOutput id=\"" + XmlBPMNProcessDumper.getUniqueNodeId(workItemNode) + "_result\" name=\"Message\" />" + EOL +
@@ -129,8 +133,12 @@ public class WorkItemNodeHandler extends AbstractNodeHandler {
             return;
         } 
 		writeNode("task", workItemNode, xmlDump, metaDataType);
+		Object isForCompensationObject = workItemNode.getMetaData("isForCompensation");
+        if( isForCompensationObject != null && ((Boolean) isForCompensationObject) ) { 
+            xmlDump.append("isForCompensation=\"true\" ");
+        }	
 		xmlDump.append("tns:taskName=\"" + XmlBPMNProcessDumper.replaceIllegalCharsAttribute(type) + "\" >" + EOL);
-		writeScripts(workItemNode, xmlDump);
+		writeExtensionElements(workItemNode, xmlDump);
 		writeIO(workItemNode, xmlDump);
 		endNode("task", xmlDump);
 	}

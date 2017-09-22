@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,20 +16,29 @@
 
 package org.jbpm.workflow.instance.node;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import org.drools.definition.process.Connection;
-import org.drools.runtime.process.NodeInstance;
 import org.jbpm.process.core.context.variable.VariableScope;
 import org.jbpm.process.instance.context.variable.VariableScopeInstance;
 import org.jbpm.workflow.core.node.Join;
+import org.jbpm.workflow.core.node.Split;
 import org.jbpm.workflow.instance.impl.NodeInstanceImpl;
+import org.kie.api.definition.process.Connection;
+import org.kie.api.definition.process.Node;
+import org.kie.api.runtime.process.NodeInstance;
+import org.kie.api.runtime.process.NodeInstanceContainer;
 
 /**
  * Runtime counterpart of a join node.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public class JoinInstance extends NodeInstanceImpl {
 
@@ -63,6 +72,7 @@ public class JoinInstance extends NodeInstanceImpl {
                 if (checkAllActivated()) {
                     decreaseAllTriggers();
                     triggerCompleted();
+                    
                 }
                 break;
             case Join.TYPE_DISCRIMINATOR :
@@ -115,6 +125,13 @@ public class JoinInstance extends NodeInstanceImpl {
                     triggerCompleted();
                 }
                 break;
+            case Join.TYPE_OR :
+                NodeInstanceContainer nodeInstanceContainer = (NodeInstanceContainer) getNodeInstanceContainer();
+                boolean activePathExists = existsActiveDirectFlow(nodeInstanceContainer, getJoin());
+                if (!activePathExists ) {
+                    triggerCompleted();
+                }
+                break;
             default :
                 throw new IllegalArgumentException( "Illegal join type " + join.getType() );
         }
@@ -141,6 +158,102 @@ public class JoinInstance extends NodeInstanceImpl {
                                    count.intValue() - 1 );
             }
         }
+    }
+    
+    private boolean existsActiveDirectFlow(NodeInstanceContainer nodeInstanceContainer, final Node lookFor) {
+        
+        Collection<NodeInstance> activeNodeInstancesOrig = nodeInstanceContainer.getNodeInstances();
+        List<NodeInstance> activeNodeInstances = new ArrayList<NodeInstance>(activeNodeInstancesOrig);
+        // sort active instances in the way that lookFor nodeInstance will be last to not finish too early
+        Collections.sort(activeNodeInstances, new Comparator<NodeInstance>() {
+
+            @Override
+            public int compare(NodeInstance o1, NodeInstance o2) {
+                if (o1.getNodeId() == lookFor.getId()) {
+                    return 1;
+                } else if (o2.getNodeId() == lookFor.getId()) {
+                    return -1;
+                }
+                return 0;
+            }
+        });
+        
+        for (NodeInstance nodeInstance : activeNodeInstances) {              
+            // do not consider NodeInstanceContainers to be checked, enough to treat is as black box
+            if (((org.jbpm.workflow.instance.NodeInstance)nodeInstance).getLevel() != getLevel()) {
+                continue;
+            }
+            Node node = nodeInstance.getNode();            
+            Set<Long> vistedNodes = new HashSet<Long>();
+            checkNodes(vistedNodes,node,  node, lookFor);
+            if (vistedNodes.contains(lookFor.getId()) && !vistedNodes.contains(node.getId())) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+
+    private boolean checkNodes(Set<Long> vistedNodes, Node startAt, Node currentNode, Node lookFor) {
+    	
+        List<Connection> connections = currentNode.getOutgoingConnections(org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE);
+        // special handling for XOR split as it usually is used for arbitrary loops
+        if (currentNode instanceof Split && ((Split) currentNode).getType() == Split.TYPE_XOR) {
+        	if (vistedNodes.contains(startAt.getId())) {
+        		return false;
+        	}
+            for (Connection conn : connections) {
+                Set<Long> xorCopy = new HashSet<Long>(vistedNodes);
+                
+                Node nextNode = conn.getTo();
+                if (nextNode == null) {
+                    continue;
+                } else {
+                    xorCopy.add(nextNode.getId());
+                    if (nextNode.getId() != lookFor.getId()) {
+          
+                        checkNodes(xorCopy, currentNode, nextNode, lookFor);
+                    }
+                }  
+                
+                if (xorCopy.contains(lookFor.getId())) {
+                    vistedNodes.addAll(xorCopy);
+                    return true;
+                }
+                
+            }
+        } else {
+            for (Connection conn : connections) {
+                Node nextNode = conn.getTo();
+                if (nextNode == null) {
+                    continue;
+                } else {
+                    
+                    if (vistedNodes.contains(nextNode.getId())) {
+                        // we have already been here so let's continue
+                        continue;
+                    }
+                    if (nextNode.getId() == lookFor.getId()) {
+                        // we found the node that we are looking for, add it and continue to find out other parts
+                        // as it could be part of a loop
+                        vistedNodes.add(nextNode.getId());
+                        continue;
+                    }
+                    vistedNodes.add(nextNode.getId());
+                    if (startAt.getId() == nextNode.getId()) {
+                        return true;
+                    } else {
+                        boolean nestedCheck = checkNodes(vistedNodes, startAt, nextNode, lookFor);
+                        if (nestedCheck) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return false;
     }
 
     private void resetAllTriggers() {

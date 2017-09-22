@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,8 +19,10 @@ package org.jbpm.workflow.core.node;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.drools.definition.process.Node;
-import org.drools.process.core.datatype.DataType;
+import org.kie.api.definition.process.Node;
+import org.jbpm.process.core.datatype.DataType;
+import org.jbpm.process.core.Context;
+import org.jbpm.process.core.context.AbstractContext;
 import org.jbpm.process.core.context.variable.Variable;
 import org.jbpm.process.core.context.variable.VariableScope;
 import org.jbpm.workflow.core.impl.ConnectionImpl;
@@ -33,9 +35,8 @@ import org.jbpm.workflow.core.impl.ExtendedNodeImpl;
  * The node continues if all activated the subflow has been completed for each
  * of the elements in the collection.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
-public class ForEachNode extends CompositeNode {
+public class ForEachNode extends CompositeContextNode {
     
     private static final long serialVersionUID = 510l;
     
@@ -43,6 +44,7 @@ public class ForEachNode extends CompositeNode {
     private String outputVariableName;
     private String collectionExpression;
     private String outputCollectionExpression;
+    private String completionConditionExpression;
     private boolean waitForCompletion = true;
 
     public ForEachNode() {
@@ -50,6 +52,7 @@ public class ForEachNode extends CompositeNode {
         ForEachSplitNode split = new ForEachSplitNode();
         split.setName("ForEachSplit");
         split.setMetaData("hidden", true);
+        split.setMetaData("UniqueId", getMetaData("Uniqueid") + ":foreach:split");
         super.addNode(split);
         super.linkIncomingConnections(
             org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE, 
@@ -58,6 +61,7 @@ public class ForEachNode extends CompositeNode {
         CompositeContextNode compositeNode = new CompositeContextNode();
         compositeNode.setName("ForEachComposite");
         compositeNode.setMetaData("hidden", true);
+        compositeNode.setMetaData("UniqueId", getMetaData("Uniqueid") + ":foreach:composite");
         super.addNode(compositeNode);
         VariableScope variableScope = new VariableScope();
         compositeNode.addContext(variableScope);
@@ -66,6 +70,7 @@ public class ForEachNode extends CompositeNode {
         ForEachJoinNode join = new ForEachJoinNode();
         join.setName("ForEachJoin");
         join.setMetaData("hidden", true);
+        join.setMetaData("UniqueId", getMetaData("Uniqueid") + ":foreach:join");
         super.addNode(join);
         super.linkOutgoingConnections(
             new CompositeNode.NodeAndType(join, org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE),
@@ -206,6 +211,11 @@ public class ForEachNode extends CompositeNode {
         variable.setName(variableName);
         variable.setType(type);
         variables.add(variable);
+        
+        Variable tmpvariable = new Variable();
+        tmpvariable.setName("foreach_output");
+        tmpvariable.setType(type);
+        variables.add(tmpvariable);
     }
 
     public String getCollectionExpression() {
@@ -232,12 +242,61 @@ public class ForEachNode extends CompositeNode {
         this.waitForCompletion = waitForCompletion;
     }
 
-   public class ForEachSplitNode extends ExtendedNodeImpl {
+   public static class ForEachSplitNode extends ExtendedNodeImpl {
         private static final long serialVersionUID = 510l;
     }
 
-    public class ForEachJoinNode extends ExtendedNodeImpl {
+    public static class ForEachJoinNode extends ExtendedNodeImpl {
         private static final long serialVersionUID = 510l;
     }
 
+    @Override
+    public Context getContext(String contextType) {
+        Context context = getCompositeNode().getDefaultContext(contextType);
+        if (context != null) {
+            return context;
+        }
+        return super.getContext(contextType);
+    }
+    
+    @Override
+    public void addContext(Context context) {
+    	getCompositeNode().addContext(context);
+        ((AbstractContext) context).setContextContainer(getCompositeNode());
+    }
+
+    @Override
+    public void setDefaultContext(Context context) {
+    	getCompositeNode().setDefaultContext(context);
+        ((AbstractContext) context).setContextContainer(getCompositeNode());
+    }
+    
+    @Override
+    public List<Context> getContexts(String contextType) {
+    	List<Context> contexts = super.getContexts(contextType);
+    	if (contexts == null) {
+    		contexts = getCompositeNode().getContexts(contextType);        
+        }
+        
+        return contexts;
+    }
+    
+    @Override
+    public Context getContext(String contextType, long id) {
+        Context ctx =  super.getContext(contextType, id);
+        if (ctx == null) {
+        	ctx = getCompositeNode().getContext(contextType, id);        
+        }
+        
+        return ctx;
+    }
+
+	public String getCompletionConditionExpression() {
+		return completionConditionExpression;
+	}
+
+	public void setCompletionConditionExpression(
+			String completionConditionExpression) {
+		this.completionConditionExpression = completionConditionExpression;
+	}
 }

@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,9 @@ package org.jbpm.bpmn2.core;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Lane implements Serializable {
     
@@ -27,6 +29,7 @@ public class Lane implements Serializable {
     private String id;
     private String name;
     private List<String> flowElementIds = new ArrayList<String>();
+    private Map<String, Object> metaData = new HashMap<String, Object>();
     
     public Lane(String id) {
         this.id = id;
@@ -50,6 +53,14 @@ public class Lane implements Serializable {
     
     public void addFlowElement(String id) {
         flowElementIds.add(id);
+    }
+
+    public Map<String, Object> getMetaData() {
+        return this.metaData;
+    }
+
+    public void setMetaData(String name, Object data) {
+        this.metaData.put(name, data);
     }
     
 }

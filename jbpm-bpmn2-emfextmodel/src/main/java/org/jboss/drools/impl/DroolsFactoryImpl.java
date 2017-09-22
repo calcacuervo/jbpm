@@ -1,8 +1,20 @@
-/**
- * <copyright>
- * </copyright>
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
- * $Id$
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
  */
 package org.jboss.drools.impl;
 
@@ -63,11 +75,13 @@ public class DroolsFactoryImpl extends EFactoryImpl implements DroolsFactory {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public EObject create(EClass eClass) {
 		switch (eClass.getClassifierID()) {
 			case DroolsPackage.DOCUMENT_ROOT: return createDocumentRoot();
 			case DroolsPackage.GLOBAL_TYPE: return createGlobalType();
 			case DroolsPackage.IMPORT_TYPE: return createImportType();
+			case DroolsPackage.META_DATA_TYPE: return createMetaDataType();
 			case DroolsPackage.ON_ENTRY_SCRIPT_TYPE: return createOnEntryScriptType();
 			case DroolsPackage.ON_EXIT_SCRIPT_TYPE: return createOnExitScriptType();
 			default:
@@ -80,6 +94,7 @@ public class DroolsFactoryImpl extends EFactoryImpl implements DroolsFactory {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public Object createFromString(EDataType eDataType, String initialValue) {
 		switch (eDataType.getClassifierID()) {
 			case DroolsPackage.PACKAGE_NAME_TYPE:
@@ -102,6 +117,7 @@ public class DroolsFactoryImpl extends EFactoryImpl implements DroolsFactory {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public String convertToString(EDataType eDataType, Object instanceValue) {
 		switch (eDataType.getClassifierID()) {
 			case DroolsPackage.PACKAGE_NAME_TYPE:
@@ -147,6 +163,16 @@ public class DroolsFactoryImpl extends EFactoryImpl implements DroolsFactory {
 	public ImportType createImportType() {
 		ImportTypeImpl importType = new ImportTypeImpl();
 		return importType;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public MetaDataType createMetaDataType() {
+		MetaDataTypeImpl metaDataType = new MetaDataTypeImpl();
+		return metaDataType;
 	}
 
 	/**
@@ -274,6 +300,7 @@ public class DroolsFactoryImpl extends EFactoryImpl implements DroolsFactory {
 	 * @deprecated
 	 * @generated
 	 */
+	@Deprecated
 	public static DroolsPackage getPackage() {
 		return DroolsPackage.eINSTANCE;
 	}

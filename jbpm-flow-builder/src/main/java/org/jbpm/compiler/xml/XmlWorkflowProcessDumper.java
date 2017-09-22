@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.compiler.xml;
 
 import java.util.ArrayList;
@@ -5,14 +21,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.drools.compiler.xml.XmlDumper;
-import org.drools.definition.process.Connection;
-import org.drools.definition.process.Node;
-import org.drools.definition.process.WorkflowProcess;
-import org.drools.process.core.datatype.DataType;
-import org.drools.process.core.datatype.impl.type.ObjectDataType;
-import org.drools.xml.Handler;
-import org.drools.xml.SemanticModule;
+import org.drools.compiler.compiler.xml.XmlDumper;
+import org.kie.api.definition.process.Connection;
+import org.kie.api.definition.process.Node;
+import org.kie.api.definition.process.WorkflowProcess;
+import org.jbpm.process.core.datatype.DataType;
+import org.jbpm.process.core.datatype.impl.type.ObjectDataType;
+import org.drools.core.xml.Handler;
+import org.drools.core.xml.SemanticModule;
 import org.jbpm.compiler.xml.processes.AbstractNodeHandler;
 import org.jbpm.process.core.context.exception.ActionExceptionHandler;
 import org.jbpm.process.core.context.exception.ExceptionHandler;
@@ -69,7 +85,7 @@ public class XmlWorkflowProcessDumper {
             xmlDump.append("version=\"" + process.getVersion() + "\" ");
         }
         if (includeMeta) {
-            Integer routerLayout = (Integer) process.getMetaData("routerLayout");
+            Integer routerLayout = (Integer) process.getMetaData().get("routerLayout");
             if (routerLayout != null && routerLayout != 0) {
                 xmlDump.append("routerLayout=\"" + routerLayout + "\" ");
             }
@@ -104,7 +120,7 @@ public class XmlWorkflowProcessDumper {
         xmlDump.append("  </header>" + EOL + EOL);
     }
     
-    private void visitImports(List<String> imports, StringBuilder xmlDump) {
+    private void visitImports(Collection<String> imports, StringBuilder xmlDump) {
         if (imports != null && imports.size() > 0) {
             xmlDump.append("    <imports>" + EOL);
             for (String importString: imports) {
@@ -168,7 +184,7 @@ public class XmlWorkflowProcessDumper {
             	if (exceptionHandler instanceof ActionExceptionHandler) {
             		ActionExceptionHandler actionExceptionHandler = (ActionExceptionHandler) exceptionHandler;
             		xmlDump.append("      <exceptionHandler faultName=\"" + entry.getKey() + "\" type=\"action\" ");
-            		String faultVariable = exceptionHandler.getFaultVariable();
+            		String faultVariable = actionExceptionHandler.getFaultVariable();
             		if (faultVariable != null && faultVariable.length() > 0) {
             			xmlDump.append("faultVariable=\"" + faultVariable + "\" ");
             		}
@@ -179,8 +195,7 @@ public class XmlWorkflowProcessDumper {
         			}
         			xmlDump.append("      </exceptionHandler>" + EOL);
             	} else {
-            		throw new IllegalArgumentException(
-        				"Unknown exception handler type: " + exceptionHandler);
+            		throw new IllegalArgumentException("Unknown exception handler type: " + exceptionHandler);
             	}
             }
             xmlDump.append("    </exceptionHandlers>" + EOL);
@@ -247,7 +262,7 @@ public class XmlWorkflowProcessDumper {
             xmlDump.append("toType=\"" + connection.getToType() + "\" ");
         }
         if (includeMeta) {
-            String bendpoints = (String) connection.getMetaData("bendpoints");
+            String bendpoints = (String) connection.getMetaData().get("bendpoints");
             if (bendpoints != null) {
                 xmlDump.append("bendpoints=\"" + bendpoints + "\" ");
             }

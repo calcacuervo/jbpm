@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,13 +18,13 @@ package org.jbpm.marshalling.impl;
 
 import java.io.IOException;
 
-import org.drools.marshalling.impl.InputMarshaller;
-import org.drools.marshalling.impl.MarshallerReaderContext;
-import org.drools.marshalling.impl.MarshallerWriteContext;
-import org.drools.runtime.process.NodeInstance;
-import org.drools.runtime.process.NodeInstanceContainer;
-import org.drools.runtime.process.ProcessInstance;
-import org.drools.runtime.process.WorkflowProcessInstance;
+import org.drools.core.marshalling.impl.InputMarshaller;
+import org.drools.core.marshalling.impl.MarshallerReaderContext;
+import org.drools.core.marshalling.impl.MarshallerWriteContext;
+import org.kie.api.runtime.process.NodeInstance;
+import org.kie.api.runtime.process.NodeInstanceContainer;
+import org.kie.api.runtime.process.ProcessInstance;
+import org.kie.api.runtime.process.WorkflowProcessInstance;
 
 /**
  * A ProcessInstanceMarshaller must contain all the write/read logic for nodes
@@ -32,11 +32,10 @@ import org.drools.runtime.process.WorkflowProcessInstance;
  * InputMarshaller, that delegates in a ProcessInstanceMarshaller to stream in/out runtime
  * information.
  * 
- * @see org.drools.marshalling.impl.OutputMarshaller
+ * @see org.drools.core.marshalling.impl.OutputMarshaller
  * @see InputMarshaller
  * @see ProcessMarshallerRegistry
  * 
- * @author mfossati, salaboy
  */
 
 public interface ProcessInstanceMarshaller {

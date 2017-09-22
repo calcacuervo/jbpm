@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,27 +16,31 @@
 
 package org.jbpm.process;
 
-import junit.framework.Assert;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import org.drools.RuleBaseFactory;
-import org.drools.StatefulSession;
-import org.drools.common.AbstractRuleBase;
-import org.drools.common.InternalWorkingMemory;
-import org.drools.concurrent.CommandExecutor;
-import org.drools.concurrent.DefaultExecutorService;
-import org.drools.concurrent.ExecutorService;
-import org.drools.reteoo.ReteooStatefulSession;
-import org.drools.runtime.process.ProcessRuntimeFactory;
+import org.drools.core.common.InternalWorkingMemory;
+import org.drools.core.impl.KnowledgeBaseFactory;
+import org.drools.core.runtime.process.ProcessRuntimeFactory;
 import org.jbpm.process.instance.InternalProcessRuntime;
 import org.jbpm.process.instance.ProcessRuntimeFactoryServiceImpl;
 import org.jbpm.process.instance.timer.TimerInstance;
 import org.jbpm.process.instance.timer.TimerManager;
 import org.jbpm.ruleflow.instance.RuleFlowProcessInstance;
+import org.jbpm.test.util.AbstractBaseTest;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.kie.api.KieBase;
+import org.kie.api.runtime.KieSession;
+import org.kie.internal.runtime.StatefulKnowledgeSession;
+import org.slf4j.LoggerFactory;
 
-public class TimerTest extends Assert {
+public class TimerTest extends AbstractBaseTest  {
 
+    public void addLogger() { 
+        logger = LoggerFactory.getLogger(this.getClass());
+    }
+    
 	private int counter = 0;
 	   
     static {
@@ -46,17 +50,19 @@ public class TimerTest extends Assert {
     @Test
     @Ignore
 	public void testTimer() {
-        AbstractRuleBase ruleBase = (AbstractRuleBase) RuleBaseFactory.newRuleBase();
-        ExecutorService executorService = new DefaultExecutorService();
-        final StatefulSession workingMemory = new ReteooStatefulSession(1, ruleBase, executorService);
-        executorService.setCommandExecutor( new CommandExecutor( workingMemory ) );
+//        AbstractRuleBase ruleBase = (AbstractRuleBase) RuleBaseFactory.newRuleBase();
+//        ExecutorService executorService = new DefaultExecutorService();
+//        final StatefulSession workingMemory = new ReteooStatefulSession(1, ruleBase, executorService);
+//        executorService.setCommandExecutor( new CommandExecutor( workingMemory ) );
+        KieBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
+        final KieSession workingMemory = kbase.newKieSession();
 
         RuleFlowProcessInstance processInstance = new RuleFlowProcessInstance() {
 			private static final long serialVersionUID = 510l;
 			public void signalEvent(String type, Object event) {
         		if ("timerTriggered".equals(type)) {
         			TimerInstance timer = (TimerInstance) event;
-            		System.out.println("Timer " + timer.getId() + " triggered");
+        			logger.info("Timer {} triggered", timer.getId());
             		counter++;
         		}
         	}

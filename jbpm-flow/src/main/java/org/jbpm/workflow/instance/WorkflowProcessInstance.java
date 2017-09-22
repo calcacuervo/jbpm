@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,13 @@
 
 package org.jbpm.workflow.instance;
 
-import org.drools.runtime.process.EventListener;
+import org.kie.api.runtime.process.EventListener;
 import org.jbpm.process.instance.ProcessInstance;
 
-public interface WorkflowProcessInstance extends ProcessInstance, org.drools.runtime.process.WorkflowProcessInstance {
+public interface WorkflowProcessInstance extends ProcessInstance, org.kie.api.runtime.process.WorkflowProcessInstance {
 
     void addEventListener(String type, EventListener eventListener, boolean external);
     
     void removeEventListener(String type, EventListener eventListener, boolean external);
-    
+
 }

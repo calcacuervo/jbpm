@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,8 +19,8 @@ package org.jbpm.ruleflow.core.factory;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.drools.process.core.Work;
-import org.drools.process.core.impl.WorkImpl;
+import org.jbpm.process.core.Work;
+import org.jbpm.process.core.impl.WorkImpl;
 import org.jbpm.process.core.timer.Timer;
 import org.jbpm.ruleflow.core.RuleFlowNodeContainerFactory;
 import org.jbpm.workflow.core.DroolsAction;
@@ -32,7 +32,6 @@ import org.jbpm.workflow.core.node.MilestoneNode;
 
 /**
  *
- * @author salaboy
  */
 public class HumanTaskNodeFactory extends NodeFactory {
 
@@ -162,6 +161,16 @@ public class HumanTaskNodeFactory extends NodeFactory {
     	getHumanTaskNode().addTimer(timer, new DroolsConsequenceAction(dialect, action));
     	return this;
     }
-    
+
+	public HumanTaskNodeFactory workParameter(String name, Object value) {
+		Work work = getHumanTaskNode().getWork();
+		if (work == null) {
+			work = new WorkImpl();
+			getHumanTaskNode().setWork(work);
+		}
+		work.setParameter(name, value);
+		return this;
+	}
+
 }
 

@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@ package org.jbpm.workflow.core.node;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.drools.definition.process.Connection;
+import org.kie.api.definition.process.Connection;
 import org.jbpm.process.core.event.EventFilter;
 import org.jbpm.process.core.event.EventTransformer;
 import org.jbpm.process.core.event.EventTypeFilter;
@@ -96,24 +96,28 @@ public class EventNode extends ExtendedNodeImpl implements EventNodeInterface {
     public void validateAddIncomingConnection(final String type, final Connection connection) {
         super.validateAddIncomingConnection(type, connection);
         if (!org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE.equals(type)) {
-            throw new IllegalArgumentException(
-                "This type of node only accepts default incoming connection type!");
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getTo().getMetaData().get("UniqueId") + ", " + connection.getTo().getName() 
+                    + "] only accepts default incoming connection type!");
         }
-        if (getFrom() != null && System.getProperty("jbpm.enable.multi.con") == null) {
-            throw new IllegalArgumentException(
-                 "This type of node cannot have more than one incoming connection!");
+        if (getFrom() != null && !"true".equals(System.getProperty("jbpm.enable.multi.con"))) {
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getTo().getMetaData().get("UniqueId") + ", " + connection.getTo().getName() 
+                    + "] cannot have more than one incoming connection!");
          }
     }
 
     public void validateAddOutgoingConnection(final String type, final Connection connection) {
         super.validateAddOutgoingConnection(type, connection);
         if (!org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE.equals(type)) {
-            throw new IllegalArgumentException(
-                "This type of node only accepts default outgoing connection type!");
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getFrom().getMetaData().get("UniqueId") + ", " + connection.getFrom().getName() 
+                    + "] only accepts default outgoing connection type!");
         }
-        if (getTo() != null && System.getProperty("jbpm.enable.multi.con") == null) {
-            throw new IllegalArgumentException(
-              "This type of node cannot have more than one outgoing connection!");
+        if (getTo() != null && !"true".equals(System.getProperty("jbpm.enable.multi.con"))) {
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getFrom().getMetaData().get("UniqueId") + ", " + connection.getFrom().getName() 
+                    + "] cannot have more than one outgoing connection!");
         }
     }
     

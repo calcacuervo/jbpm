@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,9 +18,9 @@ package org.jbpm.bpmn2.xml.di;
 
 import java.util.HashSet;
 
-import org.drools.xml.BaseAbstractHandler;
-import org.drools.xml.ExtensibleXmlParser;
-import org.drools.xml.Handler;
+import org.drools.core.xml.BaseAbstractHandler;
+import org.drools.core.xml.ExtensibleXmlParser;
+import org.drools.core.xml.Handler;
 import org.jbpm.bpmn2.xml.di.BPMNEdgeHandler.ConnectionInfo;
 import org.jbpm.bpmn2.xml.di.BPMNPlaneHandler.ProcessInfo;
 import org.w3c.dom.Element;
@@ -72,10 +72,22 @@ public class BPMNShapeHandler extends BaseAbstractHandler implements Handler {
                 String width = ((Element) xmlNode).getAttribute("width");
                 String height = ((Element) xmlNode).getAttribute("height");
                 try {
-                    int xValue = new Float(x).intValue();
-                    int yValue = new Float(y).intValue();
-                    int widthValue = new Float(width).intValue();
-                    int heightValue = new Float(height).intValue();
+                    int xValue = 0;
+                    if (x != null && x.trim().length() != 0) {
+                    	xValue = new Float(x).intValue();
+                    }
+                    int yValue = 0;
+                    if (y != null && y.trim().length() != 0) {
+                    	yValue = new Float(y).intValue();
+                    }
+                    int widthValue = 20;
+                    if (width != null && width.trim().length() != 0) {
+                    	widthValue = new Float(width).intValue();
+                    }
+                    int heightValue = 20;
+                    if (height != null && height.trim().length() != 0) {
+                    	heightValue = new Float(height).intValue();
+                    }
                     nodeInfo.setX(xValue);
                     nodeInfo.setY(yValue);
                     nodeInfo.setWidth(widthValue);

@@ -1,11 +1,11 @@
 /*
- * Copyright 2012 JBoss Inc
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,12 @@
  */
 package org.jbpm.bpmn2.core;
 
-public class Bpmn2Import {
+import java.io.Serializable;
 
+public class Bpmn2Import implements Serializable{
+
+    private static final long serialVersionUID = 6625038042886559671L;
+    
     private String type;
     private String location;
     private String namespace;

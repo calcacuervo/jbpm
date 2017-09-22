@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,12 @@
 
 package org.jbpm.workflow.core.node;
 
-import org.drools.definition.process.Connection;
+import org.kie.api.definition.process.Connection;
 import org.jbpm.workflow.core.impl.ExtendedNodeImpl;
 
 /**
  * Default implementation of a fault node.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public class FaultNode extends ExtendedNodeImpl {
 
@@ -66,12 +65,14 @@ public class FaultNode extends ExtendedNodeImpl {
     public void validateAddIncomingConnection(final String type, final Connection connection) {
         super.validateAddIncomingConnection(type, connection);
         if (!org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE.equals(type)) {
-            throw new IllegalArgumentException(
-                "This type of node only accepts default incoming connection type!");
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getTo().getMetaData().get("UniqueId") + ", " + connection.getTo().getName() 
+                    + "] only accepts default incoming connection type!");
         }
         if (getFrom() != null) {
-            throw new IllegalArgumentException(
-                "This type of node cannot have more than one incoming connection!");
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getTo().getMetaData().get("UniqueId") + ", " + connection.getTo().getName() 
+                    + "] cannot have more than one incoming connection!");
         }
     }
 

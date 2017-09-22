@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jbpm</groupId>
     <artifactId>jbpm</artifactId>
-    <version>5.4.0-SNAPSHOT</version>
+    <version>8.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>jbpm-human-task</artifactId>
@@ -14,41 +14,30 @@
   
   <modules>
     <module>jbpm-human-task-core</module>
-    <module>jbpm-human-task-hornetq</module>
-    <module>jbpm-human-task-mina</module>
-    <module>jbpm-human-task-jms</module>
-    <module>jbpm-human-task-war</module>
+    <module>jbpm-human-task-workitems</module>
+    <module>jbpm-human-task-audit</module>
+    <module>jbpm-human-task-jpa</module>
   </modules>
 
   <dependencies>
-    <dependency>
-      <groupId>dom4j</groupId>
-      <artifactId>dom4j</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.javassist</groupId>
       <artifactId>javassist</artifactId>
     </dependency>
     <!-- test --> 
     <dependency>
-      <groupId>org.subethamail</groupId>
-      <artifactId>subethasmtp-wiser</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.easymock</groupId>
       <artifactId>easymock</artifactId>
-      <version>3.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.codehaus.btm</groupId>
-      <artifactId>btm</artifactId>
+      <groupId>org.jboss.narayana.jta</groupId>
+      <artifactId>narayana-jta</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -56,27 +45,32 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <maven.btm.maxPoolSize>16</maven.btm.maxPoolSize>
-    
-    <maven.tx.type>RESOURCE_LOCAL</maven.tx.type>
-    <maven.data.source/>
-    <!--  
     <maven.tx.type>JTA</maven.tx.type>
-    <maven.data.source>&lt;jta-data-source&gt;jdbc/taskDS&lt;/jta-data-source&gt;</maven.data.source>
-    -->
+    <maven.data.source>&lt;jta-data-source&gt;jdbc/jbpm-ds&lt;/jta-data-source&gt;</maven.data.source>
     
     <!-- H2
      -->
-    <maven.hibernate.dialect>org.hibernate.dialect.H2Dialect</maven.hibernate.dialect>
-    <maven.datasource.classname>bitronix.tm.resource.jdbc.lrc.LrcXADataSource</maven.datasource.classname>
-    <maven.jdbc.driver.class>org.h2.Driver</maven.jdbc.driver.class>
-    <maven.jdbc.db.name/>
-    <maven.jdbc.db.port/>
-    <maven.jdbc.db.server/>     
-    <maven.jdbc.username>sa</maven.jdbc.username>
-    <maven.jdbc.password>sasa</maven.jdbc.password>
-    <maven.jdbc.url>jdbc:h2:mem:test;MVCC=true</maven.jdbc.url>
-    <maven.jdbc.schema/>
+    <maven.jdbc.url>jdbc:h2:mem:jbpm-db;MVCC=true</maven.jdbc.url>
   </properties>
-  
+
+  <build>
+    <plugins>
+      <plugin>
+        <!-- ensure that db files are deleted before _any_ run 
+        otherwise we get tests failing because of leftover db's/tx logs -->
+        <artifactId>maven-clean-plugin</artifactId>
+        <configuration>
+          <filesets>
+            <fileset>
+              <directory>${basedir}</directory>
+              <includes>
+                <include>btm*</include>
+                <include>*.db</include>
+              </includes>
+            </fileset>
+          </filesets>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build> 
 </project>

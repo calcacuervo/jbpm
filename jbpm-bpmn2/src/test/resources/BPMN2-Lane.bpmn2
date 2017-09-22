@@ -14,7 +14,13 @@
   <process processType="Private" isExecutable="true" id="UserTask" name="User Task" >
 
     <laneSet>
-      <lane id="_5" name="MyLane" >
+      <lane id="_5" name="My Lane" >
+        <extensionElements>
+          <tns:metaData name="elementname">
+            <tns:metaValue><![CDATA[My
+                 Lane]]></tns:metaValue>
+            </tns:metaData>
+        </extensionElements>
         <flowNodeRef>_2</flowNodeRef>
         <flowNodeRef>_3</flowNodeRef>
       </lane>
@@ -23,11 +29,17 @@
     <startEvent id="_1" name="StartProcess" />
     <userTask id="_2" name="Hello" >
       <ioSpecification>
+        <dataOutput id="_3_result" name="ActorId" />
         <inputSet>
         </inputSet>
         <outputSet>
+          <dataOutputRefs>_3_result</dataOutputRefs>
         </outputSet>
       </ioSpecification>
+      <dataOutputAssociation>
+        <sourceRef>_3_result</sourceRef>
+        <targetRef>completingActorId</targetRef>
+      </dataOutputAssociation>
       <potentialOwner>
         <resourceAssignmentExpression>
           <formalExpression>john</formalExpression>

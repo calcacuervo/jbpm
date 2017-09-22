@@ -1,8 +1,20 @@
-/**
- * <copyright>
- * </copyright>
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
- * $Id$
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
  */
 package org.jboss.drools.impl;
 
@@ -31,6 +43,7 @@ import org.jboss.drools.DocumentRoot;
 import org.jboss.drools.DroolsPackage;
 import org.jboss.drools.GlobalType;
 import org.jboss.drools.ImportType;
+import org.jboss.drools.MetaDataType;
 import org.jboss.drools.OnEntryScriptType;
 import org.jboss.drools.OnExitScriptType;
 
@@ -46,6 +59,7 @@ import org.jboss.drools.OnExitScriptType;
  *   <li>{@link org.jboss.drools.impl.DocumentRootImpl#getXSISchemaLocation <em>XSI Schema Location</em>}</li>
  *   <li>{@link org.jboss.drools.impl.DocumentRootImpl#getGlobal <em>Global</em>}</li>
  *   <li>{@link org.jboss.drools.impl.DocumentRootImpl#getImport <em>Import</em>}</li>
+ *   <li>{@link org.jboss.drools.impl.DocumentRootImpl#getMetaData <em>Meta Data</em>}</li>
  *   <li>{@link org.jboss.drools.impl.DocumentRootImpl#getOnEntryScript <em>On Entry Script</em>}</li>
  *   <li>{@link org.jboss.drools.impl.DocumentRootImpl#getOnExitScript <em>On Exit Script</em>}</li>
  *   <li>{@link org.jboss.drools.impl.DocumentRootImpl#getPackageName <em>Package Name</em>}</li>
@@ -77,7 +91,7 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 	 * @generated
 	 * @ordered
 	 */
-	protected EMap xMLNSPrefixMap;
+	protected EMap<String, String> xMLNSPrefixMap;
 
 	/**
 	 * The cached value of the '{@link #getXSISchemaLocation() <em>XSI Schema Location</em>}' map.
@@ -87,7 +101,7 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 	 * @generated
 	 * @ordered
 	 */
-	protected EMap xSISchemaLocation;
+	protected EMap<String, String> xSISchemaLocation;
 
 	/**
 	 * The default value of the '{@link #getPackageName() <em>Package Name</em>}' attribute.
@@ -203,6 +217,7 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	protected EClass eStaticClass() {
 		return DroolsPackage.Literals.DOCUMENT_ROOT;
 	}
@@ -224,9 +239,9 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EMap getXMLNSPrefixMap() {
+	public EMap<String, String> getXMLNSPrefixMap() {
 		if (xMLNSPrefixMap == null) {
-			xMLNSPrefixMap = new EcoreEMap(EcorePackage.Literals.ESTRING_TO_STRING_MAP_ENTRY, EStringToStringMapEntryImpl.class, this, DroolsPackage.DOCUMENT_ROOT__XMLNS_PREFIX_MAP);
+			xMLNSPrefixMap = new EcoreEMap<String,String>(EcorePackage.Literals.ESTRING_TO_STRING_MAP_ENTRY, EStringToStringMapEntryImpl.class, this, DroolsPackage.DOCUMENT_ROOT__XMLNS_PREFIX_MAP);
 		}
 		return xMLNSPrefixMap;
 	}
@@ -236,9 +251,9 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EMap getXSISchemaLocation() {
+	public EMap<String, String> getXSISchemaLocation() {
 		if (xSISchemaLocation == null) {
-			xSISchemaLocation = new EcoreEMap(EcorePackage.Literals.ESTRING_TO_STRING_MAP_ENTRY, EStringToStringMapEntryImpl.class, this, DroolsPackage.DOCUMENT_ROOT__XSI_SCHEMA_LOCATION);
+			xSISchemaLocation = new EcoreEMap<String,String>(EcorePackage.Literals.ESTRING_TO_STRING_MAP_ENTRY, EStringToStringMapEntryImpl.class, this, DroolsPackage.DOCUMENT_ROOT__XSI_SCHEMA_LOCATION);
 		}
 		return xSISchemaLocation;
 	}
@@ -295,6 +310,33 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 	 */
 	public void setImport(ImportType newImport) {
 		((FeatureMap.Internal)getMixed()).set(DroolsPackage.Literals.DOCUMENT_ROOT__IMPORT, newImport);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public MetaDataType getMetaData() {
+		return (MetaDataType)getMixed().get(DroolsPackage.Literals.DOCUMENT_ROOT__META_DATA, true);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public NotificationChain basicSetMetaData(MetaDataType newMetaData, NotificationChain msgs) {
+		return ((FeatureMap.Internal)getMixed()).basicAdd(DroolsPackage.Literals.DOCUMENT_ROOT__META_DATA, newMetaData, msgs);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public void setMetaData(MetaDataType newMetaData) {
+		((FeatureMap.Internal)getMixed()).set(DroolsPackage.Literals.DOCUMENT_ROOT__META_DATA, newMetaData);
 	}
 
 	/**
@@ -461,18 +503,21 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public NotificationChain eInverseRemove(InternalEObject otherEnd, int featureID, NotificationChain msgs) {
 		switch (featureID) {
 			case DroolsPackage.DOCUMENT_ROOT__MIXED:
-				return ((InternalEList)getMixed()).basicRemove(otherEnd, msgs);
+				return ((InternalEList<?>)getMixed()).basicRemove(otherEnd, msgs);
 			case DroolsPackage.DOCUMENT_ROOT__XMLNS_PREFIX_MAP:
-				return ((InternalEList)getXMLNSPrefixMap()).basicRemove(otherEnd, msgs);
+				return ((InternalEList<?>)getXMLNSPrefixMap()).basicRemove(otherEnd, msgs);
 			case DroolsPackage.DOCUMENT_ROOT__XSI_SCHEMA_LOCATION:
-				return ((InternalEList)getXSISchemaLocation()).basicRemove(otherEnd, msgs);
+				return ((InternalEList<?>)getXSISchemaLocation()).basicRemove(otherEnd, msgs);
 			case DroolsPackage.DOCUMENT_ROOT__GLOBAL:
 				return basicSetGlobal(null, msgs);
 			case DroolsPackage.DOCUMENT_ROOT__IMPORT:
 				return basicSetImport(null, msgs);
+			case DroolsPackage.DOCUMENT_ROOT__META_DATA:
+				return basicSetMetaData(null, msgs);
 			case DroolsPackage.DOCUMENT_ROOT__ON_ENTRY_SCRIPT:
 				return basicSetOnEntryScript(null, msgs);
 			case DroolsPackage.DOCUMENT_ROOT__ON_EXIT_SCRIPT:
@@ -486,6 +531,7 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public Object eGet(int featureID, boolean resolve, boolean coreType) {
 		switch (featureID) {
 			case DroolsPackage.DOCUMENT_ROOT__MIXED:
@@ -501,6 +547,8 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 				return getGlobal();
 			case DroolsPackage.DOCUMENT_ROOT__IMPORT:
 				return getImport();
+			case DroolsPackage.DOCUMENT_ROOT__META_DATA:
+				return getMetaData();
 			case DroolsPackage.DOCUMENT_ROOT__ON_ENTRY_SCRIPT:
 				return getOnEntryScript();
 			case DroolsPackage.DOCUMENT_ROOT__ON_EXIT_SCRIPT:
@@ -524,6 +572,7 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public void eSet(int featureID, Object newValue) {
 		switch (featureID) {
 			case DroolsPackage.DOCUMENT_ROOT__MIXED:
@@ -540,6 +589,9 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 				return;
 			case DroolsPackage.DOCUMENT_ROOT__IMPORT:
 				setImport((ImportType)newValue);
+				return;
+			case DroolsPackage.DOCUMENT_ROOT__META_DATA:
+				setMetaData((MetaDataType)newValue);
 				return;
 			case DroolsPackage.DOCUMENT_ROOT__ON_ENTRY_SCRIPT:
 				setOnEntryScript((OnEntryScriptType)newValue);
@@ -571,6 +623,7 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public void eUnset(int featureID) {
 		switch (featureID) {
 			case DroolsPackage.DOCUMENT_ROOT__MIXED:
@@ -587,6 +640,9 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 				return;
 			case DroolsPackage.DOCUMENT_ROOT__IMPORT:
 				setImport((ImportType)null);
+				return;
+			case DroolsPackage.DOCUMENT_ROOT__META_DATA:
+				setMetaData((MetaDataType)null);
 				return;
 			case DroolsPackage.DOCUMENT_ROOT__ON_ENTRY_SCRIPT:
 				setOnEntryScript((OnEntryScriptType)null);
@@ -618,6 +674,7 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public boolean eIsSet(int featureID) {
 		switch (featureID) {
 			case DroolsPackage.DOCUMENT_ROOT__MIXED:
@@ -630,6 +687,8 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 				return getGlobal() != null;
 			case DroolsPackage.DOCUMENT_ROOT__IMPORT:
 				return getImport() != null;
+			case DroolsPackage.DOCUMENT_ROOT__META_DATA:
+				return getMetaData() != null;
 			case DroolsPackage.DOCUMENT_ROOT__ON_ENTRY_SCRIPT:
 				return getOnEntryScript() != null;
 			case DroolsPackage.DOCUMENT_ROOT__ON_EXIT_SCRIPT:
@@ -653,6 +712,7 @@ public class DocumentRootImpl extends EObjectImpl implements DocumentRoot {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public String toString() {
 		if (eIsProxy()) return super.toString();
 

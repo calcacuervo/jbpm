@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.integrationtests;
 
 import java.io.Reader;
@@ -7,22 +23,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.drools.RuleBase;
-import org.drools.RuleBaseFactory;
-import org.drools.WorkingMemory;
-import org.drools.compiler.PackageBuilder;
-import org.drools.rule.Package;
-import org.drools.runtime.process.WorkItem;
-import org.drools.runtime.process.WorkItemHandler;
-import org.drools.runtime.process.WorkItemManager;
-import org.jbpm.JbpmTestCase;
 import org.jbpm.process.instance.ProcessInstance;
+import org.jbpm.test.util.AbstractBaseTest;
+import org.junit.Test;
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.process.WorkItem;
+import org.kie.api.runtime.process.WorkItemHandler;
+import org.kie.api.runtime.process.WorkItemManager;
 
-public class ProcessForEachTest extends JbpmTestCase {
-    
-    
+import static org.junit.Assert.assertEquals;
+
+public class ProcessForEachTest extends AbstractBaseTest {
+  
+    @Test
     public void testForEach() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -35,7 +49,7 @@ public class ProcessForEachTest extends JbpmTestCase {
             "    </globals>\n" +
             "    <variables>\n" +
             "      <variable name=\"collection\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>\n" +
@@ -66,10 +80,9 @@ public class ProcessForEachTest extends JbpmTestCase {
             "  </connections>\n" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+        
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<String> myList = new ArrayList<String>();
         workingMemory.setGlobal("myList", myList);
         List<String> collection = new ArrayList<String>();
@@ -84,8 +97,8 @@ public class ProcessForEachTest extends JbpmTestCase {
         assertEquals(3, myList.size());
     }
     
+    @Test
     public void testForEachLargeList() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -95,7 +108,7 @@ public class ProcessForEachTest extends JbpmTestCase {
             "  <header>\n" +
             "    <variables>\n" +
             "      <variable name=\"collection\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>\n" +
@@ -106,7 +119,7 @@ public class ProcessForEachTest extends JbpmTestCase {
             "        <workItem id=\"1\" name=\"Log\" >\n" +
             "          <work name=\"Log\" >\n" +
             "            <parameter name=\"Message\" >\n" +
-            "              <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "              <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "            </parameter>\n" +
             "          </work>\n" +
             "          <mapping type=\"in\" from=\"item\" to=\"Message\" />" +
@@ -131,15 +144,13 @@ public class ProcessForEachTest extends JbpmTestCase {
             "  </connections>\n" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
+        
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         final List<String> myList = new ArrayList<String>();
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
         workingMemory.getWorkItemManager().registerWorkItemHandler("Log", new WorkItemHandler() {
 			public void executeWorkItem(WorkItem workItem, WorkItemManager manager) {
 				String message = (String) workItem.getParameter("Message");
-//				System.out.println(message);
 				myList.add(message);
 				manager.completeWorkItem(workItem.getId(), null);
 			}
@@ -158,8 +169,8 @@ public class ProcessForEachTest extends JbpmTestCase {
         assertEquals(10000, myList.size());
     }
     
+    @Test
     public void testForEachEmptyList() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -172,7 +183,7 @@ public class ProcessForEachTest extends JbpmTestCase {
             "    </globals>\n" +
             "    <variables>\n" +
             "      <variable name=\"collection\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>\n" +
@@ -203,10 +214,9 @@ public class ProcessForEachTest extends JbpmTestCase {
             "  </connections>\n" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+        
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<String> myList = new ArrayList<String>();
         workingMemory.setGlobal("myList", myList);
         List<String> collection = new ArrayList<String>();
@@ -217,8 +227,8 @@ public class ProcessForEachTest extends JbpmTestCase {
         assertEquals(ProcessInstance.STATE_COMPLETED, processInstance.getState());
     }
     
+    @Test
     public void testForEachNullList() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -231,7 +241,7 @@ public class ProcessForEachTest extends JbpmTestCase {
             "    </globals>\n" +
             "    <variables>\n" +
             "      <variable name=\"collection\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>\n" +
@@ -262,10 +272,9 @@ public class ProcessForEachTest extends JbpmTestCase {
             "  </connections>\n" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+        
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<String> myList = new ArrayList<String>();
         workingMemory.setGlobal("myList", myList);
         ProcessInstance processInstance = ( ProcessInstance )
@@ -273,8 +282,8 @@ public class ProcessForEachTest extends JbpmTestCase {
         assertEquals(ProcessInstance.STATE_COMPLETED, processInstance.getState());
     }
     
+    @Test
     public void testForEachCancel() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -287,7 +296,7 @@ public class ProcessForEachTest extends JbpmTestCase {
             "    </globals>\n" +
             "    <variables>\n" +
             "      <variable name=\"collection\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>\n" +
@@ -325,7 +334,7 @@ public class ProcessForEachTest extends JbpmTestCase {
 			"\n" +
 			"  <header>\n" +
 			"    <imports>\n" +
-			"      <import name=\"org.jbpm.Person\" />\n" +
+			"      <import name=\"org.jbpm.integrationtests.test.Person\" />\n" +
 			"    </imports>\n" +
 			"  </header>\n" +
 			"\n" +
@@ -344,10 +353,9 @@ public class ProcessForEachTest extends JbpmTestCase {
 			"\n" +
 			"</process>");
 		builder.addRuleFlow(source);
-		Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+		
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<String> collection = new ArrayList<String>();
         collection.add("one");
         collection.add("two");
@@ -362,8 +370,8 @@ public class ProcessForEachTest extends JbpmTestCase {
         assertEquals(0, workingMemory.getProcessInstances().size());
     }
     
+    @Test
     public void testForEachCancelIndependent() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -376,7 +384,7 @@ public class ProcessForEachTest extends JbpmTestCase {
             "    </globals>\n" +
             "    <variables>\n" +
             "      <variable name=\"collection\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>\n" +
@@ -414,7 +422,7 @@ public class ProcessForEachTest extends JbpmTestCase {
 			"\n" +
 			"  <header>\n" +
 			"    <imports>\n" +
-			"      <import name=\"org.jbpm.Person\" />\n" +
+			"      <import name=\"org.jbpm.integrationtests.test.Person\" />\n" +
 			"    </imports>\n" +
 			"  </header>\n" +
 			"\n" +
@@ -433,10 +441,9 @@ public class ProcessForEachTest extends JbpmTestCase {
 			"\n" +
 			"</process>");
 		builder.addRuleFlow(source);
-		Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+        
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<String> collection = new ArrayList<String>();
         collection.add("one");
         collection.add("two");
@@ -451,8 +458,8 @@ public class ProcessForEachTest extends JbpmTestCase {
         assertEquals(3, workingMemory.getProcessInstances().size());
     }
     
+    @Test
     public void testForEachWithEventNode() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<process xmlns=\"http://drools.org/drools-5.0/process\"\n" +
@@ -465,7 +472,7 @@ public class ProcessForEachTest extends JbpmTestCase {
             "    </globals>\n" +
             "    <variables>\n" +
             "      <variable name=\"collection\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.ObjectDataType\" className=\"java.util.List\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>\n" +
@@ -508,10 +515,9 @@ public class ProcessForEachTest extends JbpmTestCase {
             "  </connections>\n" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+        
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<String> myList = new ArrayList<String>();
         workingMemory.setGlobal("myList", myList);
         List<String> collection = new ArrayList<String>();

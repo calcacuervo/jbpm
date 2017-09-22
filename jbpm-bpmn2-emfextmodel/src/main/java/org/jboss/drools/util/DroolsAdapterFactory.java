@@ -1,8 +1,20 @@
-/**
- * <copyright>
- * </copyright>
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
- * $Id$
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
  */
 package org.jboss.drools.util;
 
@@ -52,6 +64,7 @@ public class DroolsAdapterFactory extends AdapterFactoryImpl {
 	 * @return whether this factory is applicable for the type of the object.
 	 * @generated
 	 */
+	@Override
 	public boolean isFactoryForType(Object object) {
 		if (object == modelPackage) {
 			return true;
@@ -68,24 +81,34 @@ public class DroolsAdapterFactory extends AdapterFactoryImpl {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	protected DroolsSwitch modelSwitch =
-		new DroolsSwitch() {
-			public Object caseDocumentRoot(DocumentRoot object) {
+	protected DroolsSwitch<Adapter> modelSwitch =
+		new DroolsSwitch<Adapter>() {
+			@Override
+			public Adapter caseDocumentRoot(DocumentRoot object) {
 				return createDocumentRootAdapter();
 			}
-			public Object caseGlobalType(GlobalType object) {
+			@Override
+			public Adapter caseGlobalType(GlobalType object) {
 				return createGlobalTypeAdapter();
 			}
-			public Object caseImportType(ImportType object) {
+			@Override
+			public Adapter caseImportType(ImportType object) {
 				return createImportTypeAdapter();
 			}
-			public Object caseOnEntryScriptType(OnEntryScriptType object) {
+			@Override
+			public Adapter caseMetaDataType(MetaDataType object) {
+				return createMetaDataTypeAdapter();
+			}
+			@Override
+			public Adapter caseOnEntryScriptType(OnEntryScriptType object) {
 				return createOnEntryScriptTypeAdapter();
 			}
-			public Object caseOnExitScriptType(OnExitScriptType object) {
+			@Override
+			public Adapter caseOnExitScriptType(OnExitScriptType object) {
 				return createOnExitScriptTypeAdapter();
 			}
-			public Object defaultCase(EObject object) {
+			@Override
+			public Adapter defaultCase(EObject object) {
 				return createEObjectAdapter();
 			}
 		};
@@ -98,8 +121,9 @@ public class DroolsAdapterFactory extends AdapterFactoryImpl {
 	 * @return the adapter for the <code>target</code>.
 	 * @generated
 	 */
+	@Override
 	public Adapter createAdapter(Notifier target) {
-		return (Adapter)modelSwitch.doSwitch((EObject)target);
+		return modelSwitch.doSwitch((EObject)target);
 	}
 
 
@@ -142,6 +166,20 @@ public class DroolsAdapterFactory extends AdapterFactoryImpl {
 	 * @generated
 	 */
 	public Adapter createImportTypeAdapter() {
+		return null;
+	}
+
+	/**
+	 * Creates a new adapter for an object of class '{@link org.jboss.drools.MetaDataType <em>Meta Data Type</em>}'.
+	 * <!-- begin-user-doc -->
+	 * This default implementation returns null so that we can easily ignore cases;
+	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
+	 * <!-- end-user-doc -->
+	 * @return the new adapter.
+	 * @see org.jboss.drools.MetaDataType
+	 * @generated
+	 */
+	public Adapter createMetaDataTypeAdapter() {
 		return null;
 	}
 

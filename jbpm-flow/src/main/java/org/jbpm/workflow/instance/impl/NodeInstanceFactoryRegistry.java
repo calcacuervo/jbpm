@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,14 +19,16 @@ package org.jbpm.workflow.instance.impl;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.drools.definition.process.Node;
 import org.jbpm.workflow.core.node.ActionNode;
+import org.jbpm.workflow.core.node.AsyncEventNode;
+import org.jbpm.workflow.core.node.BoundaryEventNode;
 import org.jbpm.workflow.core.node.CatchLinkNode;
 import org.jbpm.workflow.core.node.CompositeContextNode;
 import org.jbpm.workflow.core.node.CompositeNode;
 import org.jbpm.workflow.core.node.DynamicNode;
 import org.jbpm.workflow.core.node.EndNode;
 import org.jbpm.workflow.core.node.EventNode;
+import org.jbpm.workflow.core.node.EventSubProcessNode;
 import org.jbpm.workflow.core.node.FaultNode;
 import org.jbpm.workflow.core.node.ForEachNode;
 import org.jbpm.workflow.core.node.HumanTaskNode;
@@ -43,12 +45,15 @@ import org.jbpm.workflow.core.node.WorkItemNode;
 import org.jbpm.workflow.instance.impl.factory.CreateNewNodeFactory;
 import org.jbpm.workflow.instance.impl.factory.ReuseNodeFactory;
 import org.jbpm.workflow.instance.node.ActionNodeInstance;
+import org.jbpm.workflow.instance.node.AsyncEventNodeInstance;
+import org.jbpm.workflow.instance.node.BoundaryEventNodeInstance;
 import org.jbpm.workflow.instance.node.CatchLinkNodeInstance;
 import org.jbpm.workflow.instance.node.CompositeContextNodeInstance;
 import org.jbpm.workflow.instance.node.CompositeNodeInstance;
 import org.jbpm.workflow.instance.node.DynamicNodeInstance;
 import org.jbpm.workflow.instance.node.EndNodeInstance;
 import org.jbpm.workflow.instance.node.EventNodeInstance;
+import org.jbpm.workflow.instance.node.EventSubProcessNodeInstance;
 import org.jbpm.workflow.instance.node.FaultNodeInstance;
 import org.jbpm.workflow.instance.node.ForEachNodeInstance;
 import org.jbpm.workflow.instance.node.HumanTaskNodeInstance;
@@ -62,14 +67,25 @@ import org.jbpm.workflow.instance.node.SubProcessNodeInstance;
 import org.jbpm.workflow.instance.node.ThrowLinkNodeInstance;
 import org.jbpm.workflow.instance.node.TimerNodeInstance;
 import org.jbpm.workflow.instance.node.WorkItemNodeInstance;
+import org.kie.api.definition.process.Node;
+import org.kie.api.runtime.Environment;
 
 public class NodeInstanceFactoryRegistry {
 	
-    public static final NodeInstanceFactoryRegistry INSTANCE = new NodeInstanceFactoryRegistry();
+    private static final NodeInstanceFactoryRegistry INSTANCE = new NodeInstanceFactoryRegistry();
 
     private Map<Class< ? extends Node>, NodeInstanceFactory> registry;
+    
+    public static NodeInstanceFactoryRegistry getInstance(Environment environment) {
+        // allow custom NodeInstanceFactoryRegistry to be given as part of the environment - e.g simulation
+        if (environment != null && environment.get("NodeInstanceFactoryRegistry") != null) {
+            return (NodeInstanceFactoryRegistry) environment.get("NodeInstanceFactoryRegistry");
+        }
+        
+        return INSTANCE;
+    }
 
-    private NodeInstanceFactoryRegistry() {
+    protected NodeInstanceFactoryRegistry() {
         this.registry = new HashMap<Class< ? extends Node>, NodeInstanceFactory>();
 
         // hard wired nodes:
@@ -95,6 +111,8 @@ public class NodeInstanceFactoryRegistry {
                   new CreateNewNodeFactory( TimerNodeInstance.class ) );
         register( FaultNode.class,
                   new CreateNewNodeFactory( FaultNodeInstance.class ) );
+        register(EventSubProcessNode.class, 
+                  new CreateNewNodeFactory(EventSubProcessNodeInstance.class));
         register( CompositeNode.class,
                   new CreateNewNodeFactory( CompositeNodeInstance.class ) );
         register( CompositeContextNode.class,
@@ -109,11 +127,17 @@ public class NodeInstanceFactoryRegistry {
                   new CreateNewNodeFactory( StateNodeInstance.class ) );
         register( DynamicNode.class,
                   new CreateNewNodeFactory( DynamicNodeInstance.class ) );
+        register( BoundaryEventNode.class,
+                new CreateNewNodeFactory( BoundaryEventNodeInstance.class ) );
+        register( AsyncEventNode.class,
+                new CreateNewNodeFactory( AsyncEventNodeInstance.class ) );
         
         register(CatchLinkNode.class, new CreateNewNodeFactory(
 				CatchLinkNodeInstance.class));
 		register(ThrowLinkNode.class, new CreateNewNodeFactory(
 				ThrowLinkNodeInstance.class));
+		
+		
     }
 
     public void register(Class< ? extends Node> cls,

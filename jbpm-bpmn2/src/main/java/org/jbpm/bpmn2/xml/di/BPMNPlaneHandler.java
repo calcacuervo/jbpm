@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,19 +20,19 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import org.drools.definition.process.Connection;
-import org.drools.definition.process.Node;
-import org.drools.definition.process.NodeContainer;
-import org.drools.definition.process.Process;
-import org.drools.xml.BaseAbstractHandler;
-import org.drools.xml.ExtensibleXmlParser;
-import org.drools.xml.Handler;
+import org.drools.core.xml.BaseAbstractHandler;
+import org.drools.core.xml.ExtensibleXmlParser;
+import org.drools.core.xml.Handler;
 import org.jbpm.bpmn2.core.Definitions;
 import org.jbpm.bpmn2.xml.di.BPMNEdgeHandler.ConnectionInfo;
 import org.jbpm.bpmn2.xml.di.BPMNShapeHandler.NodeInfo;
 import org.jbpm.compiler.xml.ProcessBuildData;
 import org.jbpm.ruleflow.core.RuleFlowProcess;
 import org.jbpm.workflow.core.impl.ConnectionImpl;
+import org.kie.api.definition.process.Connection;
+import org.kie.api.definition.process.Node;
+import org.kie.api.definition.process.NodeContainer;
+import org.kie.api.definition.process.Process;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
@@ -72,7 +72,7 @@ public class BPMNPlaneHandler extends BaseAbstractHandler implements Handler {
         List<Process> processes = ((ProcessBuildData) parser.getData()).getProcesses();
         RuleFlowProcess process = null;
         for (Process p : processes) {
-            if (p.getId().equals(processInfo.getProcessRef())) {
+            if (p.getId() != null && p.getId().equals(processInfo.getProcessRef())) {
                 process = (RuleFlowProcess) p;
                 break;
             }
@@ -92,6 +92,9 @@ public class BPMNPlaneHandler extends BaseAbstractHandler implements Handler {
     }
     
     private boolean processNodeInfo(NodeInfo nodeInfo, Node[] nodes) {
+    	if (nodeInfo == null || nodeInfo.getNodeRef() == null) {
+    		return false;
+    	}
         for (Node node: nodes) {
             String id = (String) node.getMetaData().get("UniqueId");
             if (nodeInfo.getNodeRef().equals(id)) {

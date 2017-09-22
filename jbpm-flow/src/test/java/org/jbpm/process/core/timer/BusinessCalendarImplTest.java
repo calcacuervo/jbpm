@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.process.core.timer;
 
 import static org.junit.Assert.assertEquals;
@@ -9,11 +25,17 @@ import java.util.Date;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import org.drools.time.SessionPseudoClock;
+import org.kie.api.time.SessionPseudoClock;
+import org.jbpm.test.util.AbstractBaseTest;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
-public class BusinessCalendarImplTest {
+public class BusinessCalendarImplTest extends AbstractBaseTest {
 
+    public void addLogger() { 
+        logger = LoggerFactory.getLogger(this.getClass());
+    }
+    
     @Test
     public void testCalculateHours() {
         Properties config = new Properties();
@@ -89,7 +111,7 @@ public class BusinessCalendarImplTest {
     @Test
     public void testCalculateMinutesPassingOverHoliday() {
         Properties config = new Properties();
-        config.setProperty(BusinessCalendarImpl.HOLIDAYS, "2012-05-10:2012-05-19");
+        config.setProperty(BusinessCalendarImpl.HOLIDAYS, "2012-05-12:2012-05-19");
         String expectedDate = "2012-05-21 09:15";
         
         SessionPseudoClock clock = new StaticPseudoClock(parseToDateWithTime("2012-05-11 16:45").getTime());
@@ -222,7 +244,7 @@ public class BusinessCalendarImplTest {
     public void testCalculateDaysPassingOverHolidayAtYearEnd() {
         Properties config = new Properties();
         config.setProperty(BusinessCalendarImpl.HOLIDAYS, "2012-12-31:2013-01-01");
-        String expectedDate = "2013-01-02 09:15";
+        String expectedDate = "2013-01-04 09:15";
         
         SessionPseudoClock clock = new StaticPseudoClock(parseToDateWithTime("2012-12-28 16:45").getTime());        
         BusinessCalendarImpl businessCal = new BusinessCalendarImpl(config, clock);
@@ -248,6 +270,72 @@ public class BusinessCalendarImplTest {
         assertEquals(expectedDate, formatDate("yyyy-MM-dd HH:mm", result));
     }
     
+    @Test
+    public void testCalculateISOHours() {
+        Properties config = new Properties();
+        String expectedDate = "2012-05-04 16:45";
+        SessionPseudoClock clock = new StaticPseudoClock(parseToDateWithTime("2012-05-04 13:45").getTime());
+        
+        BusinessCalendarImpl businessCal = new BusinessCalendarImpl(config, clock);
+        
+        Date result = businessCal.calculateBusinessTimeAsDate("PT3H");
+        
+        assertEquals(expectedDate, formatDate("yyyy-MM-dd HH:mm", result));
+    }
+    
+    @Test
+    public void testCalculateISODaysAndHours() {
+        Properties config = new Properties();
+        config.setProperty(BusinessCalendarImpl.HOLIDAYS, "2012-05-09");
+        String expectedDate = "2012-05-10 15:30";
+        
+        SessionPseudoClock clock = new StaticPseudoClock(parseToDateWithTime("2012-05-08 11:10").getTime());
+        
+        BusinessCalendarImpl businessCal = new BusinessCalendarImpl(config, clock);
+        
+        Date result = businessCal.calculateBusinessTimeAsDate("P1DT4H20M");
+        
+        assertEquals(expectedDate, formatDate("yyyy-MM-dd HH:mm", result));
+    }
+    
+    @Test
+    public void testSingleHolidayWithinGivenTime() {
+    	final Properties props = new Properties();
+		props.put(BusinessCalendarImpl.HOLIDAYS, "2015-01-13");
+		String expectedDate = "2015-01-15 11:38";
+ 
+		SessionPseudoClock clock = new StaticPseudoClock(parseToDateWithTimeAndMillis("2015-01-08 11:38:30.198").getTime());
+ 
+		BusinessCalendarImpl businessCalendarImpl = new BusinessCalendarImpl(props, clock);
+ 
+		Date result = businessCalendarImpl.calculateBusinessTimeAsDate("4d");
+		assertEquals(expectedDate, formatDate("yyyy-MM-dd HH:mm", result));
+    }
+
+    @Test
+    public void testCalculateMillisecondsAsDefault() {
+        Properties config = new Properties();
+        String expectedDate = "2012-05-04 16:45:10.000";
+        SessionPseudoClock clock = new StaticPseudoClock(parseToDateWithTimeAndMillis("2012-05-04 16:45:00.000").getTime());
+
+        BusinessCalendarImpl businessCal = new BusinessCalendarImpl(config, clock);
+
+        Date result = businessCal.calculateBusinessTimeAsDate("10000");
+
+        assertEquals(expectedDate, formatDate("yyyy-MM-dd HH:mm:ss.SSS", result));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testMissingConfigurationDualArgConstructor() {
+        SessionPseudoClock clock = new StaticPseudoClock(parseToDateWithTime("2012-05-04 13:45").getTime());
+        BusinessCalendarImpl businessCal = new BusinessCalendarImpl(null, clock);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testMissingConfigurationSingleArgConstructor() {
+        BusinessCalendarImpl businessCal = new BusinessCalendarImpl(null);
+    }
+
     private Date parseToDate(String dateString) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         
@@ -263,6 +351,19 @@ public class BusinessCalendarImplTest {
     
     private Date parseToDateWithTime(String dateString) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        
+        Date testTime;
+        try {
+            testTime = sdf.parse(dateString);
+            
+            return testTime;
+        } catch (ParseException e) {
+            return null;
+        }        
+    }
+    
+    private Date parseToDateWithTimeAndMillis(String dateString) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
         
         Date testTime;
         try {

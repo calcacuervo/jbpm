@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,7 @@ package org.jbpm.bpmn2.xml;
 
 import java.util.List;
 
-import org.drools.xml.ExtensibleXmlParser;
+import org.drools.core.xml.ExtensibleXmlParser;
 import org.jbpm.bpmn2.core.Interface;
 import org.jbpm.bpmn2.core.Interface.Operation;
 import org.jbpm.compiler.xml.ProcessBuildData;
@@ -46,30 +46,40 @@ public class ServiceTaskHandler extends TaskHandler {
         WorkItemNode workItemNode = (WorkItemNode) node;
         String operationRef = element.getAttribute("operationRef");
         String implementation = element.getAttribute("implementation");
-        List<Interface> interfaces = (List<Interface>)
-            ((ProcessBuildData) parser.getData()).getMetaData("Interfaces");
-        if (interfaces == null) {
-            throw new IllegalArgumentException("No interfaces found");
-        }
-        Operation operation = null;
-        for (Interface i: interfaces) {
-            operation = i.getOperation(operationRef);
-            if (operation != null) {
-                break;
-            }
-        }
-        if (operation == null) {
-            throw new IllegalArgumentException("Could not find operation " + operationRef);
-        }
-        workItemNode.getWork().setParameter("Interface", operation.getInterface().getName());
-        workItemNode.getWork().setParameter("Operation", operation.getName());
-        workItemNode.getWork().setParameter("ParameterType", operation.getMessage().getType());
+        List<Interface> interfaces = (List<Interface>) ((ProcessBuildData) parser.getData()).getMetaData("Interfaces");
         
-        // parameters to support web service invocation 
-        if (implementation != null) {
-            workItemNode.getWork().setParameter("interfaceImplementationRef", operation.getInterface().getImplementationRef());
-            workItemNode.getWork().setParameter("operationImplementationRef", operation.getImplementationRef());
-            workItemNode.getWork().setParameter("implementation", implementation);
+        workItemNode.setMetaData("OperationRef", operationRef);
+        workItemNode.setMetaData("Implementation", implementation);
+        workItemNode.setMetaData("Type", "Service Task");
+        if (interfaces != null) {
+//            throw new IllegalArgumentException("No interfaces found");
+        
+	        Operation operation = null;
+	        for (Interface i: interfaces) {
+	            operation = i.getOperation(operationRef);
+	            if (operation != null) {
+	                break;
+	            }
+	        }
+	        if (operation == null) {
+	            throw new IllegalArgumentException("Could not find operation " + operationRef);
+	        }
+	        // avoid overriding parameters set by data input associations
+	        if (workItemNode.getWork().getParameter("Interface") == null) {
+	            workItemNode.getWork().setParameter("Interface", operation.getInterface().getName());
+	        }
+	        if (workItemNode.getWork().getParameter("Operation") == null) {
+	            workItemNode.getWork().setParameter("Operation", operation.getName());
+	        }
+	        if (workItemNode.getWork().getParameter("ParameterType") == null) {
+	            workItemNode.getWork().setParameter("ParameterType", operation.getMessage().getType());
+	        }
+	        // parameters to support web service invocation 
+	        if (implementation != null) {
+	            workItemNode.getWork().setParameter("interfaceImplementationRef", operation.getInterface().getImplementationRef());
+	            workItemNode.getWork().setParameter("operationImplementationRef", operation.getImplementationRef());
+	            workItemNode.getWork().setParameter("implementation", implementation);
+	        }
         }
     }
     

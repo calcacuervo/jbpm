@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,18 +17,16 @@
 package org.jbpm.workflow.core.node;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
-import org.drools.definition.process.Connection;
 import org.jbpm.workflow.core.Constraint;
 import org.jbpm.workflow.core.impl.ConnectionRef;
 import org.jbpm.workflow.core.impl.NodeImpl;
+import org.kie.api.definition.process.Connection;
 
 /**
  * Default implementation of a split node.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public class Split extends NodeImpl implements Constrainable {
 
@@ -61,7 +59,7 @@ public class Split extends NodeImpl implements Constrainable {
     private static final long serialVersionUID = 510l;
 
     private int type;
-    private Map<ConnectionRef, Constraint> constraints = new HashMap<ConnectionRef, Constraint>();
+//    private Map<ConnectionRef, Constraint> constraints = new HashMap<ConnectionRef, Constraint>();
 
     public Split() {
         this.type = TYPE_UNDEFINED;
@@ -77,6 +75,28 @@ public class Split extends NodeImpl implements Constrainable {
 
     public int getType() {
         return this.type;
+    }
+    
+    public boolean isDefault(final Connection connection) {
+        if ( connection == null ) {
+            throw new IllegalArgumentException( "connection is null" );
+        }
+
+        if ( this.type == TYPE_OR || this.type == TYPE_XOR ) {
+            ConnectionRef ref = new ConnectionRef(connection.getTo().getId(), connection.getToType());
+            Constraint constraint = this.constraints.get(ref);
+            String defaultConnection = (String) getMetaData().get("Default");
+            String connectionId = (String) connection.getMetaData().get("UniqueId");
+            if (constraint != null) {
+                return constraint.isDefault();
+            } else if (constraint == null && connectionId.equals(defaultConnection)) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        throw new UnsupportedOperationException( "Constraints are " + 
+            "only supported with XOR or OR split types, not with: " + getType() );
     }
 
     public Constraint getConstraint(final Connection connection) {
@@ -129,20 +149,23 @@ public class Split extends NodeImpl implements Constrainable {
     public void validateAddIncomingConnection(final String type, final Connection connection) {
         super.validateAddIncomingConnection(type, connection);
         if (!org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE.equals(type)) {
-            throw new IllegalArgumentException(
-                "This type of node only accepts default incoming connection type!");
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getTo().getMetaData().get("UniqueId") + ", " + connection.getTo().getName() 
+                    + "] only accepts default incoming connection type!");
         }
         if (!getIncomingConnections(org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE).isEmpty()) {
-            throw new IllegalArgumentException(
-                "This type of node cannot have more than one incoming connection!");
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getTo().getMetaData().get("UniqueId") + ", " + connection.getTo().getName() 
+                    + "] cannot have more than one incoming connection!");
         }
     }
 
     public void validateAddOutgoingConnection(final String type, final Connection connection) {
         super.validateAddOutgoingConnection(type, connection);
         if (!org.jbpm.workflow.core.Node.CONNECTION_DEFAULT_TYPE.equals(type)) {
-            throw new IllegalArgumentException(
-                "This type of node only accepts default outgoing connection type!");
+        	throw new IllegalArgumentException(
+                    "This type of node [" + connection.getFrom().getMetaData().get("UniqueId") + ", " + connection.getFrom().getName() 
+                    + "] only accepts default outgoing connection type!");
         }
     }
 

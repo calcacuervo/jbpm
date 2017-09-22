@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.integrationtests;
 
 import java.io.Reader;
@@ -8,31 +24,33 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.drools.KnowledgeBase;
-import org.drools.KnowledgeBaseFactory;
-import org.drools.RuleBase;
-import org.drools.RuleBaseFactory;
-import org.drools.WorkingMemory;
-import org.drools.builder.KnowledgeBuilder;
-import org.drools.builder.KnowledgeBuilderError;
-import org.drools.builder.KnowledgeBuilderFactory;
-import org.drools.builder.ResourceType;
-import org.drools.compiler.PackageBuilder;
-import org.drools.definition.KnowledgePackage;
-import org.drools.io.ResourceFactory;
-import org.drools.rule.Package;
-import org.drools.runtime.StatefulKnowledgeSession;
-import org.drools.runtime.process.ProcessInstance;
-import org.jbpm.JbpmTestCase;
-import org.jbpm.Person;
+import org.drools.core.impl.InternalKnowledgeBase;
+import org.drools.core.impl.KnowledgeBaseFactory;
+import org.jbpm.integrationtests.test.Person;
 import org.jbpm.process.core.context.variable.VariableScope;
 import org.jbpm.process.instance.context.variable.VariableScopeInstance;
 import org.jbpm.ruleflow.instance.RuleFlowProcessInstance;
+import org.jbpm.test.util.AbstractBaseTest;
+import org.junit.Test;
+import org.kie.api.definition.KiePackage;
+import org.kie.api.io.ResourceType;
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.process.ProcessInstance;
+import org.kie.internal.builder.KnowledgeBuilder;
+import org.kie.internal.builder.KnowledgeBuilderError;
+import org.kie.internal.builder.KnowledgeBuilderFactory;
+import org.kie.internal.io.ResourceFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ProcessSplitTest extends JbpmTestCase {
+import static org.junit.Assert.assertEquals;
+
+public class ProcessSplitTest extends AbstractBaseTest {
     
+    private static final Logger logger = LoggerFactory.getLogger(ProcessSplitTest.class);
+    
+    @Test
     public void testSplitWithProcessInstanceConstraint() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<process xmlns=\"http://drools.org/drools-5.0/process\"" +
             "         xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\"" +
@@ -41,7 +59,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "  <header>" +
             "    <imports>" +
-            "      <import name=\"org.jbpm.Person\" />" +
+            "      <import name=\"org.jbpm.integrationtests.test.Person\" />" +
             "      <import name=\"org.jbpm.integrationtests.ProcessSplitTest.ProcessUtils\" />" +
             "    </imports>" +
             "    <globals>" +
@@ -49,7 +67,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "    </globals>" +
             "    <variables>\n" +
             "      <variable name=\"name\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>" +
@@ -82,10 +100,9 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<Long> list = new ArrayList<Long>();
         workingMemory.setGlobal("list", list);
 
@@ -116,6 +133,7 @@ public class ProcessSplitTest extends JbpmTestCase {
         assertEquals(2, list.size());
     }
 
+    @Test
     public void testSplitWithProcessInstanceConstraint2() {
     	KnowledgeBuilder kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
         Reader source = new StringReader(
@@ -126,15 +144,15 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "  <header>" +
             "    <imports>" +
-            "      <import name=\"org.jbpm.Person\" />" +
-            "      <import name=\"org.drools.runtime.process.WorkflowProcessInstance\" />" +
+            "      <import name=\"org.jbpm.integrationtests.test.Person\" />" +
+            "      <import name=\"org.kie.api.runtime.process.WorkflowProcessInstance\" />" +
             "    </imports>" +
             "    <globals>" +
             "      <global identifier=\"list\" type=\"java.util.List\" />" +
             "    </globals>" +
             "    <variables>\n" +
             "      <variable name=\"name\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>" +
@@ -168,13 +186,13 @@ public class ProcessSplitTest extends JbpmTestCase {
             "</process>");
         kbuilder.add( ResourceFactory.newReaderResource( source ), ResourceType.DRF );
         for (KnowledgeBuilderError error: kbuilder.getErrors()) {
-        	System.out.println(error);
+            logger.error(error.toString());
         }
         
-        Collection<KnowledgePackage> kpkgs = kbuilder.getKnowledgePackages();
-        KnowledgeBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
-        kbase.addKnowledgePackages( kpkgs );        
-        StatefulKnowledgeSession ksession = kbase.newStatefulKnowledgeSession();
+        Collection<KiePackage> kpkgs = kbuilder.getKnowledgePackages();
+        InternalKnowledgeBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
+        kbase.addPackages( kpkgs );        
+        KieSession ksession = kbase.newKieSession();
         List<Long> list = new ArrayList<Long>();
         ksession.setGlobal("list", list);
 
@@ -205,8 +223,8 @@ public class ProcessSplitTest extends JbpmTestCase {
         assertEquals(2, list.size());
     }
 
+    @Test
     public void testSplitWithMVELContextConstraint() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<process xmlns=\"http://drools.org/drools-5.0/process\"" +
             "         xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\"" +
@@ -215,7 +233,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "  <header>" +
             "    <imports>" +
-            "      <import name=\"org.jbpm.Person\" />" +
+            "      <import name=\"org.jbpm.integrationtests.test.Person\" />" +
             "      <import name=\"org.jbpm.integrationtests.ProcessSplitTest.ProcessUtils\" />" +
             "    </imports>" +
             "    <globals>" +
@@ -223,7 +241,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "    </globals>" +
             "    <variables>\n" +
             "      <variable name=\"person\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.ObjectDataType\" className=\"org.jbpm.Person\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.ObjectDataType\" className=\"org.jbpm.integrationtests.test.Person\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>" +
@@ -255,10 +273,9 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<Long> list = new ArrayList<Long>();
         workingMemory.setGlobal("list", list);
 
@@ -271,8 +288,8 @@ public class ProcessSplitTest extends JbpmTestCase {
         assertEquals(1, list.size());
     }
     
+    @Test
     public void testSplitWithJavaContextConstraint() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<process xmlns=\"http://drools.org/drools-5.0/process\"" +
             "         xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\"" +
@@ -281,7 +298,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "  <header>" +
             "    <imports>" +
-            "      <import name=\"org.jbpm.Person\" />" +
+            "      <import name=\"org.jbpm.integrationtests.test.Person\" />" +
             "      <import name=\"org.jbpm.integrationtests.ProcessSplitTest.ProcessUtils\" />" +
             "    </imports>" +
             "    <globals>" +
@@ -289,7 +306,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "    </globals>" +
             "    <variables>\n" +
             "      <variable name=\"name\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>" +
@@ -321,10 +338,9 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<Long> list = new ArrayList<Long>();
         workingMemory.setGlobal("list", list);
 
@@ -337,8 +353,8 @@ public class ProcessSplitTest extends JbpmTestCase {
         assertEquals(1, list.size());
     }
     
+    @Test
     public void testSplitWithMVELkContextConstraint() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<process xmlns=\"http://drools.org/drools-5.0/process\"" +
             "         xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\"" +
@@ -347,7 +363,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "  <header>" +
             "    <imports>" +
-            "      <import name=\"org.jbpm.Person\" />" +
+            "      <import name=\"org.jbpm.integrationtests.test.Person\" />" +
             "      <import name=\"org.jbpm.integrationtests.ProcessSplitTest.ProcessUtils\" />" +
             "    </imports>" +
             "    <globals>" +
@@ -355,7 +371,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "    </globals>" +
             "    <variables>\n" +
             "      <variable name=\"person\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.ObjectDataType\" className=\"org.jbpm.Person\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.ObjectDataType\" className=\"org.jbpm.integrationtests.test.Person\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>" +
@@ -367,7 +383,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "    <split id=\"4\" name=\"Split\" type=\"2\" >" +
             "      <constraints>" +
             "        <constraint toNodeId=\"8\" toType=\"DROOLS_DEFAULT\" priority=\"2\" type=\"code\" dialect=\"mvel\" >return true;</constraint>" +
-            "        <constraint toNodeId=\"6\" toType=\"DROOLS_DEFAULT\" priority=\"1\" type=\"code\" dialect=\"mvel\" >return context.getVariable(\"person\") != null &amp;&amp; ((org.jbpm.Person) context.getVariable(\"person\")).name != null;</constraint>" +
+            "        <constraint toNodeId=\"6\" toType=\"DROOLS_DEFAULT\" priority=\"1\" type=\"code\" dialect=\"mvel\" >return context.getVariable(\"person\") != null &amp;&amp; ((org.jbpm.integrationtests.test.Person) context.getVariable(\"person\")).name != null;</constraint>" +
             "      </constraints>" +
             "    </split>" +
             "    <end id=\"8\" name=\"End\" />" +
@@ -387,10 +403,9 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<Long> list = new ArrayList<Long>();
         workingMemory.setGlobal("list", list);
 
@@ -403,8 +418,8 @@ public class ProcessSplitTest extends JbpmTestCase {
         assertEquals(1, list.size());
     }
     
+    @Test
     public void testSplitWithJavakContextConstraint() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<process xmlns=\"http://drools.org/drools-5.0/process\"" +
             "         xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\"" +
@@ -413,7 +428,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "  <header>" +
             "    <imports>" +
-            "      <import name=\"org.jbpm.Person\" />" +
+            "      <import name=\"org.jbpm.integrationtests.test.Person\" />" +
             "      <import name=\"org.jbpm.integrationtests.ProcessSplitTest.ProcessUtils\" />" +
             "    </imports>" +
             "    <globals>" +
@@ -421,7 +436,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "    </globals>" +
             "    <variables>\n" +
             "      <variable name=\"name\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>" +
@@ -453,10 +468,9 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<Long> list = new ArrayList<Long>();
         workingMemory.setGlobal("list", list);
 
@@ -469,8 +483,8 @@ public class ProcessSplitTest extends JbpmTestCase {
         assertEquals(1, list.size());
     }
     
+    @Test
     public void testSplitWithMVELVariableConstraint() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<process xmlns=\"http://drools.org/drools-5.0/process\"" +
             "         xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\"" +
@@ -479,7 +493,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "  <header>" +
             "    <imports>" +
-            "      <import name=\"org.jbpm.Person\" />" +
+            "      <import name=\"org.jbpm.integrationtests.test.Person\" />" +
             "      <import name=\"org.jbpm.integrationtests.ProcessSplitTest.ProcessUtils\" />" +
             "    </imports>" +
             "    <globals>" +
@@ -487,7 +501,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "    </globals>" +
             "    <variables>\n" +
             "      <variable name=\"name\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>" +
@@ -519,10 +533,9 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<Long> list = new ArrayList<Long>();
         workingMemory.setGlobal("list", list);
 
@@ -535,8 +548,8 @@ public class ProcessSplitTest extends JbpmTestCase {
         assertEquals(1, list.size());
     }
     
+    @Test
     public void testSplitWithJavaVariableConstraint() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<process xmlns=\"http://drools.org/drools-5.0/process\"" +
             "         xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\"" +
@@ -545,7 +558,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "  <header>" +
             "    <imports>" +
-            "      <import name=\"org.jbpm.Person\" />" +
+            "      <import name=\"org.jbpm.integrationtests.test.Person\" />" +
             "      <import name=\"org.jbpm.integrationtests.ProcessSplitTest.ProcessUtils\" />" +
             "    </imports>" +
             "    <globals>" +
@@ -553,7 +566,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "    </globals>" +
             "    <variables>\n" +
             "      <variable name=\"name\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>" +
@@ -585,10 +598,9 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<Long> list = new ArrayList<Long>();
         workingMemory.setGlobal("list", list);
 
@@ -601,8 +613,8 @@ public class ProcessSplitTest extends JbpmTestCase {
         assertEquals(1, list.size());
     }
 
+    @Test
     public void testSplitWithMVELGlobalConstraint() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<process xmlns=\"http://drools.org/drools-5.0/process\"" +
             "         xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\"" +
@@ -611,7 +623,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "  <header>" +
             "    <imports>" +
-            "      <import name=\"org.jbpm.Person\" />" +
+            "      <import name=\"org.jbpm.integrationtests.test.Person\" />" +
             "      <import name=\"org.jbpm.integrationtests.ProcessSplitTest.ProcessUtils\" />" +
             "    </imports>" +
             "    <globals>" +
@@ -619,7 +631,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "    </globals>" +
             "    <variables>\n" +
             "      <variable name=\"name\" >\n" +
-            "        <type name=\"org.drools.process.core.datatype.impl.type.StringDataType\" />\n" +
+            "        <type name=\"org.jbpm.process.core.datatype.impl.type.StringDataType\" />\n" +
             "      </variable>\n" +
             "    </variables>\n" +
             "  </header>" +
@@ -651,10 +663,9 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<Long> list = new ArrayList<Long>();
         workingMemory.setGlobal("list", list);
 
@@ -667,8 +678,8 @@ public class ProcessSplitTest extends JbpmTestCase {
         assertEquals(1, list.size());
     }
     
+    @Test
     public void testSplitWithJavaGlobalConstraint() {
-        PackageBuilder builder = new PackageBuilder();
         Reader source = new StringReader(
             "<process xmlns=\"http://drools.org/drools-5.0/process\"" +
             "         xmlns:xs=\"http://www.w3.org/2001/XMLSchema-instance\"" +
@@ -677,7 +688,7 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "  <header>" +
             "    <imports>" +
-            "      <import name=\"org.jbpm.Person\" />" +
+            "      <import name=\"org.jbpm.integrationtests.test.Person\" />" +
             "      <import name=\"org.jbpm.integrationtests.ProcessSplitTest.ProcessUtils\" />" +
             "    </imports>" +
             "    <globals>" +
@@ -712,17 +723,14 @@ public class ProcessSplitTest extends JbpmTestCase {
             "" +
             "</process>");
         builder.addRuleFlow(source);
-        Package pkg = builder.getPackage();
-        RuleBase ruleBase = RuleBaseFactory.newRuleBase();
-        ruleBase.addPackage( pkg );
-        WorkingMemory workingMemory = ruleBase.newStatefulSession();
+
+        KieSession workingMemory = createKieSession(builder.getPackages());
+        
         List<Long> list = new ArrayList<Long>();
         workingMemory.setGlobal("list", list);
 
-        Map<String, Object> params = new HashMap<String, Object>();
-        params.put("name", "John Doe");
         ProcessInstance processInstance = ( ProcessInstance )
-            workingMemory.startProcess("org.jbpm.process-split", params);
+            workingMemory.startProcess("org.jbpm.process-split");
         
         assertEquals(ProcessInstance.STATE_COMPLETED, processInstance.getState());
         assertEquals(1, list.size());

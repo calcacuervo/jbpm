@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.examples.humantask;
 
 import java.util.ArrayList;
@@ -5,168 +21,105 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.drools.KnowledgeBase;
-import org.drools.SystemEventListenerFactory;
-import org.drools.builder.KnowledgeBuilder;
-import org.drools.builder.KnowledgeBuilderFactory;
-import org.drools.builder.ResourceType;
-import org.drools.io.ResourceFactory;
-import org.drools.logger.KnowledgeRuntimeLogger;
-import org.drools.logger.KnowledgeRuntimeLoggerFactory;
-import org.drools.runtime.StatefulKnowledgeSession;
-import org.jbpm.process.workitem.wsht.HornetQHTWorkItemHandler;
-import org.jbpm.task.AccessType;
-import org.jbpm.task.Content;
-import org.jbpm.task.Task;
-import org.jbpm.task.TaskService;
-import org.jbpm.task.query.TaskSummary;
-import org.jbpm.task.service.ContentData;
-import org.jbpm.task.service.SyncTaskServiceWrapper;
-import org.jbpm.task.service.hornetq.AsyncHornetQTaskClient;
-import org.jbpm.task.utils.ContentMarshallerHelper;
+import org.jbpm.test.JBPMHelper;
+import org.kie.api.KieServices;
+import org.kie.api.io.ResourceType;
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.manager.RuntimeEngine;
+import org.kie.api.runtime.manager.RuntimeEnvironment;
+import org.kie.api.runtime.manager.RuntimeEnvironmentBuilder;
+import org.kie.api.runtime.manager.RuntimeManager;
+import org.kie.api.runtime.manager.RuntimeManagerFactory;
+import org.kie.api.task.TaskService;
+import org.kie.api.task.UserGroupCallback;
+import org.kie.api.task.model.TaskSummary;
 
 public class HumanTaskExample {
 
     public static final void main(String[] args) {
         try {
-            // load up the knowledge base
-            KnowledgeBase kbase = readKnowledgeBase();
-            StatefulKnowledgeSession ksession = kbase.newStatefulKnowledgeSession();
-            KnowledgeRuntimeLogger logger = KnowledgeRuntimeLoggerFactory.newThreadedFileLogger(ksession, "test", 1000);
-            HornetQHTWorkItemHandler hornetQHTWorkItemHandler = new HornetQHTWorkItemHandler(ksession);
-            ksession.getWorkItemManager().registerWorkItemHandler("Human Task", hornetQHTWorkItemHandler);
+            RuntimeManager manager = getRuntimeManager("humantask/HumanTask.bpmn");        
+            RuntimeEngine runtime = manager.getRuntimeEngine(null);
+            KieSession ksession = runtime.getKieSession();
+
             // start a new process instance
             Map<String, Object> params = new HashMap<String, Object>();
             params.put("userId", "krisv");
             params.put("description", "Need a new laptop computer");
             ksession.startProcess("com.sample.humantask", params);
 
-            SystemEventListenerFactory.setSystemEventListener(new SystemEventListener());
-            // we can reuse the client used by the Work Item Hander.
-            TaskService taskClient = new SyncTaskServiceWrapper(new AsyncHornetQTaskClient("HumanTaskExample-testClient"));
-
-            taskClient.connect("127.0.0.1", 5445);
-            
-            Thread.sleep(1000);
             // "sales-rep" reviews request
-            List<String> groups = new ArrayList<String>();
-            groups.add("sales");
-
-            TaskSummary task1 = taskClient.getTasksAssignedAsPotentialOwner("sales-rep", groups, "en-UK").get(0);
+            TaskService taskService = runtime.getTaskService();
+    		TaskSummary task1 = taskService.getTasksAssignedAsPotentialOwner("sales-rep", "en-UK").get(0);
             System.out.println("Sales-rep executing task " + task1.getName() + "(" + task1.getId() + ": " + task1.getDescription() + ")");
-            taskClient.claim(task1.getId(), "sales-rep", groups);
-            
-            Thread.sleep(1000);
-            
-            taskClient.start(task1.getId(), "sales-rep");
-
+            taskService.claim(task1.getId(), "sales-rep");
+            taskService.start(task1.getId(), "sales-rep");
             Map<String, Object> results = new HashMap<String, Object>();
             results.put("comment", "Agreed, existing laptop needs replacing");
             results.put("outcome", "Accept");
-            ContentData contentData = ContentMarshallerHelper.marshal(results,  null);
-
-            taskClient.complete(task1.getId(), "sales-rep", contentData);
-
-            Thread.sleep(2000);
+            taskService.complete(task1.getId(), "sales-rep", results);
 
             // "krisv" approves result
-            TaskSummary task2 = taskClient.getTasksAssignedAsPotentialOwner("krisv", "en-UK").get(0);
+            TaskSummary task2 = taskService.getTasksAssignedAsPotentialOwner("krisv", "en-UK").get(0);
             System.out.println("krisv executing task " + task2.getName() + "(" + task2.getId() + ": " + task2.getDescription() + ")");
-            taskClient.start(task2.getId(), "krisv");
-
-            
-            
+            taskService.start(task2.getId(), "krisv");
             results = new HashMap<String, Object>();
             results.put("outcome", "Agree");
-            contentData = ContentMarshallerHelper.marshal(results, null);
+            taskService.complete(task2.getId(), "krisv", results);
 
-
-            taskClient.complete(task2.getId(), "krisv", contentData);
-
-            Thread.sleep(2000);
             // "john" as manager reviews request
-
-            groups = new ArrayList<String>();
-            groups.add("PM");
-
-            TaskSummary task3 = taskClient.getTasksAssignedAsPotentialOwner("john", groups, "en-UK").get(0);
+            TaskSummary task3 = taskService.getTasksAssignedAsPotentialOwner("john", "en-UK").get(0);
             System.out.println("john executing task " + task3.getName() + "(" + task3.getId() + ": " + task3.getDescription() + ")");
-
-            
-            taskClient.claim(task3.getId(), "john", groups);
-            
-            taskClient.start(task3.getId(), "john");
-
+            taskService.claim(task3.getId(), "john");
+            taskService.start(task3.getId(), "john");
             results = new HashMap<String, Object>();
             results.put("outcome", "Agree");
-            contentData = ContentMarshallerHelper.marshal(results, null);
+            taskService.complete(task3.getId(), "john", results);
 
-            taskClient.complete(task3.getId(), "john", contentData);
-
-            Thread.sleep(2000);
             // "sales-rep" gets notification
-            TaskSummary task4 = taskClient.getTasksAssignedAsPotentialOwner("sales-rep", "en-UK").get(0);
+            TaskSummary task4 = taskService.getTasksAssignedAsPotentialOwner("sales-rep", "en-UK").get(0);
             System.out.println("sales-rep executing task " + task4.getName() + "(" + task4.getId() + ": " + task4.getDescription() + ")");
-
-            taskClient.start(task4.getId(), "sales-rep");
-
-
-            Task task = taskClient.getTask(task4.getId());
-
-
-            Content content = taskClient.getContent(task.getTaskData().getDocumentContentId());
-
-            Object result = ContentMarshallerHelper.unmarshall(content.getContent(), null);
-
-            Map<?, ?> map = (Map<?, ?>) result;
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
+            taskService.start(task4.getId(), "sales-rep");
+            Map<String, Object> content = taskService.getTaskContent(task4.getId());
+            for (Map.Entry<?, ?> entry : content.entrySet()) {
                 System.out.println(entry.getKey() + " = " + entry.getValue());
             }
+            taskService.complete(task4.getId(), "sales-rep", null);
 
-
-            taskClient.complete(task4.getId(), "sales-rep", null);
-
-            
-            Thread.sleep(2000);
-            taskClient.disconnect();
-            hornetQHTWorkItemHandler.dispose();
-            logger.close();
-            System.exit(0);
+    		System.out.println("Process instance completed");
+    		
+    		manager.disposeRuntimeEngine(runtime);
         } catch (Throwable t) {
             t.printStackTrace();
         }
+        System.exit(0);
     }
 
-    private static KnowledgeBase readKnowledgeBase() throws Exception {
-        KnowledgeBuilder kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
-        kbuilder.add(ResourceFactory.newClassPathResource("humantask/HumanTask.bpmn"), ResourceType.BPMN2);
-        return kbuilder.newKnowledgeBase();
+    private static RuntimeManager getRuntimeManager(String process) {
+        // load up the knowledge base
+    	JBPMHelper.startH2Server();
+    	JBPMHelper.setupDataSource();
+        RuntimeEnvironment environment = RuntimeEnvironmentBuilder.Factory.get().newDefaultBuilder()
+            .userGroupCallback(new UserGroupCallback() {
+    			public List<String> getGroupsForUser(String userId) {
+    				List<String> result = new ArrayList<String>();
+    				if ("sales-rep".equals(userId)) {
+    					result.add("sales");
+    				} else if ("john".equals(userId)) {
+    					result.add("PM");
+    				}
+    				return result;
+    			}
+    			public boolean existsUser(String arg0) {
+    				return true;
+    			}
+    			public boolean existsGroup(String arg0) {
+    				return true;
+    			}
+    		})
+            .addAsset(KieServices.Factory.get().getResources().newClassPathResource(process), ResourceType.BPMN2)
+            .get();
+        return RuntimeManagerFactory.Factory.get().newSingletonRuntimeManager(environment);
     }
-
-    private static class SystemEventListener implements org.drools.SystemEventListener {
-
-        public void debug(String arg0) {
-        }
-
-        public void debug(String arg0, Object arg1) {
-        }
-
-        public void exception(Throwable arg0) {
-        }
-
-        public void exception(String arg0, Throwable arg1) {
-        }
-
-        public void info(String arg0) {
-        }
-
-        public void info(String arg0, Object arg1) {
-        }
-
-        public void warning(String arg0) {
-        }
-
-        public void warning(String arg0, Object arg1) {
-        }
-    }
+    
 }

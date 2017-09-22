@@ -1,12 +1,12 @@
 /*
- * Copyright 2006 JBoss Inc
- * 
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,24 +16,27 @@
 
 package org.jbpm.process.builder.dialect.java;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
+import org.drools.compiler.lang.descr.ProcessDescr;
+import org.drools.core.rule.ImportDeclaration;
 import org.drools.core.util.StringUtils;
-import org.drools.lang.descr.ProcessDescr;
-import org.drools.rule.ImportDeclaration;
 import org.jbpm.process.builder.ProcessBuildContext;
 import org.jbpm.process.builder.ProcessClassBuilder;
 
-/**
- * @author etirelli
- *
- */
 public class JavaProcessClassBuilder
     implements
     ProcessClassBuilder {
 
+    protected static List<String> systemImports = new ArrayList<String>();
+    static {
+        systemImports.add( org.drools.core.util.KieFunctions.class.getName() );
+    }
+
     /* (non-Javadoc)
-     * @see org.drools.rule.builder.dialect.java.RuleClassBuilder#buildRule(org.drools.rule.builder.BuildContext, org.drools.rule.builder.dialect.java.BuildUtils, org.drools.lang.descr.RuleDescr)
+     * @see org.drools.core.rule.builder.dialect.java.RuleClassBuilder#buildRule(org.drools.core.rule.builder.BuildContext, org.drools.core.rule.builder.dialect.java.BuildUtils, RuleDescr)
      */
     public String  buildRule(final ProcessBuildContext context) {
         // If there is no compiled code, return
@@ -48,6 +51,12 @@ public class JavaProcessClassBuilder
 
         for ( ImportDeclaration decl : context.getPkg().getImports().values() ) {
             buffer.append( "import " +  decl.getTarget() + ";" + lineSeparator );
+        }
+
+        for ( String systemImport : systemImports ) {
+            if ( !context.getPkg().getImports().containsKey( systemImport ) ) {
+                buffer.append( "import ").append( systemImport ).append( ";" ).append( lineSeparator );
+            }
         }
 
         for ( final Iterator it = context.getPkg().getStaticImports().iterator(); it.hasNext(); ) {

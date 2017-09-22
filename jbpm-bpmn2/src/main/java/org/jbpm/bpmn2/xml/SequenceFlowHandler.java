@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,9 +20,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import org.drools.xml.BaseAbstractHandler;
-import org.drools.xml.ExtensibleXmlParser;
-import org.drools.xml.Handler;
+import org.drools.core.xml.BaseAbstractHandler;
+import org.drools.core.xml.ExtensibleXmlParser;
+import org.drools.core.xml.Handler;
 import org.jbpm.bpmn2.core.Association;
 import org.jbpm.bpmn2.core.IntermediateLink;
 import org.jbpm.bpmn2.core.Lane;
@@ -130,13 +130,19 @@ public class SequenceFlowHandler extends BaseAbstractHandler implements Handler 
 					String language = languageNode.getNodeValue();
 					if (XmlBPMNProcessDumper.JAVA_LANGUAGE.equals(language)) {
 						sequenceFlow.setLanguage("java");
+					} else if (XmlBPMNProcessDumper.MVEL_LANGUAGE
+							.equals(language)) {
+						sequenceFlow.setLanguage("mvel");
 					} else if (XmlBPMNProcessDumper.RULE_LANGUAGE
 							.equals(language)) {
 						sequenceFlow.setType("rule");
 					} else if (XmlBPMNProcessDumper.XPATH_LANGUAGE
 							.equals(language)) {
 						sequenceFlow.setLanguage("XPath");
-					} else {
+					} else if (XmlBPMNProcessDumper.JAVASCRIPT_LANGUAGE
+                            .equals(language)) {
+                        sequenceFlow.setLanguage("JavaScript");
+                    } else {
 						throw new IllegalArgumentException("Unknown language "
 								+ language);
 					}

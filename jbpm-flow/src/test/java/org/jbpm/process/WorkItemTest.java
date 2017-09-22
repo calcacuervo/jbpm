@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.process;
 
 import java.util.ArrayList;
@@ -7,25 +23,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.drools.KnowledgeBase;
-import org.drools.KnowledgeBaseFactory;
-import org.drools.WorkItemHandlerNotFoundException;
-import org.drools.common.AbstractRuleBase;
-import org.drools.impl.InternalKnowledgeBase;
-import org.drools.process.core.ParameterDefinition;
-import org.drools.process.core.Work;
-import org.drools.process.core.datatype.impl.type.IntegerDataType;
-import org.drools.process.core.datatype.impl.type.ObjectDataType;
-import org.drools.process.core.datatype.impl.type.StringDataType;
-import org.drools.process.core.impl.ParameterDefinitionImpl;
-import org.drools.process.core.impl.WorkImpl;
-import org.drools.runtime.StatefulKnowledgeSession;
-import org.drools.runtime.process.ProcessInstance;
-import org.jbpm.JbpmTestCase;
-import org.jbpm.Person;
+import org.drools.core.WorkItemHandlerNotFoundException;
+import org.jbpm.process.core.ParameterDefinition;
+import org.jbpm.process.core.Work;
+import org.jbpm.process.core.datatype.impl.type.IntegerDataType;
+import org.jbpm.process.core.datatype.impl.type.ObjectDataType;
+import org.jbpm.process.core.datatype.impl.type.StringDataType;
+import org.jbpm.process.core.impl.ParameterDefinitionImpl;
+import org.jbpm.process.core.impl.WorkImpl;
 import org.jbpm.process.core.context.variable.Variable;
 import org.jbpm.process.instance.impl.demo.DoNothingWorkItemHandler;
+import org.jbpm.process.test.Person;
 import org.jbpm.ruleflow.core.RuleFlowProcess;
+import org.jbpm.test.util.AbstractBaseTest;
 import org.jbpm.workflow.core.Node;
 import org.jbpm.workflow.core.impl.ConnectionImpl;
 import org.jbpm.workflow.core.node.EndNode;
@@ -33,17 +43,23 @@ import org.jbpm.workflow.core.node.StartNode;
 import org.jbpm.workflow.core.node.WorkItemNode;
 import org.junit.Assert;
 import org.junit.Test;
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.process.ProcessInstance;
+import org.slf4j.LoggerFactory;
 
-public class WorkItemTest extends JbpmTestCase {
+public class WorkItemTest extends AbstractBaseTest {
 
+    public void addLogger() { 
+        logger = LoggerFactory.getLogger(this.getClass());
+    }
+    
+	@Test
     public void testReachNonRegisteredWorkItemHandler() {
         String processId = "org.drools.actions";
         String workName = "Unnexistent Task";
         RuleFlowProcess process = getWorkItemProcess( processId,
                                                       workName );
-        KnowledgeBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
-        ((AbstractRuleBase) ((InternalKnowledgeBase) kbase).getRuleBase()).addProcess( process );
-        StatefulKnowledgeSession ksession = kbase.newStatefulKnowledgeSession();
+        KieSession ksession = createKieSession(process); 
 
         Map<String, Object> parameters = new HashMap<String, Object>();
         parameters.put( "UserName",
@@ -62,15 +78,14 @@ public class WorkItemTest extends JbpmTestCase {
         Assert.assertNull( processInstance );
     }
 
+	@Test
     public void testCancelNonRegisteredWorkItemHandler() {
         String processId = "org.drools.actions";
         String workName = "Unnexistent Task";
         RuleFlowProcess process = getWorkItemProcess( processId,
                                                       workName );
-        KnowledgeBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
-        ((AbstractRuleBase) ((InternalKnowledgeBase) kbase).getRuleBase()).addProcess( process );
-        StatefulKnowledgeSession ksession = kbase.newStatefulKnowledgeSession();
-
+        KieSession ksession = createKieSession(process); 
+        
         ksession.getWorkItemManager().registerWorkItemHandler( workName,
                                                                new DoNothingWorkItemHandler() );
 

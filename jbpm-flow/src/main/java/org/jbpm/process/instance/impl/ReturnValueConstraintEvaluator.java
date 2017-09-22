@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,17 +21,17 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
-import org.drools.definition.process.Connection;
-import org.drools.spi.CompiledInvoker;
-import org.drools.spi.ProcessContext;
-import org.drools.spi.Wireable;
+import org.kie.api.definition.process.Connection;
+import org.drools.core.spi.CompiledInvoker;
+import org.drools.core.spi.ProcessContext;
+import org.drools.core.spi.Wireable;
+import org.jbpm.process.instance.ProcessInstance;
 import org.jbpm.workflow.core.Constraint;
-import org.jbpm.workflow.instance.node.SplitInstance;
+import org.jbpm.workflow.instance.NodeInstance;
 
 /**
  * Default implementation of a constraint.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public class ReturnValueConstraintEvaluator
     implements
@@ -118,20 +118,20 @@ public class ReturnValueConstraintEvaluator
         return this.evaluator;
     }
 
-    public boolean evaluate(SplitInstance instance,
+    public boolean evaluate(NodeInstance instance,
                             Connection connection,
                             Constraint constraint) {
         Object value;
         try {
-            ProcessContext context = new ProcessContext(instance.getProcessInstance().getKnowledgeRuntime());
+            ProcessContext context = new ProcessContext(((ProcessInstance)instance.getProcessInstance()).getKnowledgeRuntime());
             context.setNodeInstance( instance );
             value = this.evaluator.evaluate( context );
         } catch ( Exception e ) {
-            throw new RuntimeException( "unable to execute ReturnValueEvaluator",
+            throw new RuntimeException( "unable to execute ReturnValueEvaluator: ",
                                         e );
         }
         if ( !(value instanceof Boolean) ) {
-            throw new RuntimeException( "Constraints must return boolean values" );
+            throw new RuntimeException( "Constraints must return boolean values: " + value + " for expression " + constraint);
         }
         return ((Boolean) value).booleanValue();
     }

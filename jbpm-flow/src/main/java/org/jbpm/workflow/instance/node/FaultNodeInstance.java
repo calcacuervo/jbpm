@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,8 +18,6 @@ package org.jbpm.workflow.instance.node;
 
 import java.util.Collection;
 
-import org.drools.runtime.process.NodeInstance;
-import org.drools.runtime.process.WorkflowProcessInstance;
 import org.jbpm.process.core.context.exception.ExceptionScope;
 import org.jbpm.process.core.context.variable.VariableScope;
 import org.jbpm.process.instance.ProcessInstance;
@@ -28,15 +26,19 @@ import org.jbpm.process.instance.context.variable.VariableScopeInstance;
 import org.jbpm.workflow.core.node.FaultNode;
 import org.jbpm.workflow.instance.NodeInstanceContainer;
 import org.jbpm.workflow.instance.impl.NodeInstanceImpl;
+import org.kie.api.runtime.process.NodeInstance;
+import org.kie.api.runtime.process.WorkflowProcessInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Runtime counterpart of a fault node.
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public class FaultNodeInstance extends NodeInstanceImpl {
 
     private static final long serialVersionUID = 510l;
+    private static final Logger logger = LoggerFactory.getLogger(FaultNodeInstance.class);
     
     protected FaultNode getFaultNode() {
         return (FaultNode) getNode();
@@ -51,7 +53,13 @@ public class FaultNodeInstance extends NodeInstanceImpl {
         ExceptionScopeInstance exceptionScopeInstance = getExceptionScopeInstance(faultName);
         NodeInstanceContainer nodeInstanceContainer =  (NodeInstanceContainer) getNodeInstanceContainer();
         nodeInstanceContainer.removeNodeInstance(this);
+        boolean exceptionHandled = false;
         if (getFaultNode().isTerminateParent()) {
+            // handle exception before canceling nodes to allow boundary event to catch the events
+            if (exceptionScopeInstance != null) {
+                exceptionHandled = true;
+                handleException(faultName, exceptionScopeInstance);                
+            }
             if (nodeInstanceContainer instanceof CompositeNodeInstance) {
 
                 ((CompositeNodeInstance) nodeInstanceContainer).cancel();
@@ -63,10 +71,12 @@ public class FaultNodeInstance extends NodeInstanceImpl {
             }
         }
         if (exceptionScopeInstance != null) {
-        	handleException(faultName, exceptionScopeInstance);
+            if (!exceptionHandled) {
+                handleException(faultName, exceptionScopeInstance);
+            }
         } else {
 
-        	((ProcessInstance) getProcessInstance()).setState(ProcessInstance.STATE_ABORTED, faultName);
+        	((ProcessInstance) getProcessInstance()).setState(ProcessInstance.STATE_ABORTED, faultName, getFaultData());
 
         }
     }
@@ -89,9 +99,9 @@ public class FaultNodeInstance extends NodeInstanceImpl {
             if (variableScopeInstance != null) {
                 value = variableScopeInstance.getVariable(faultVariable);
             } else {
-                System.err.println("Could not find variable scope for variable " + faultVariable);
-                System.err.println("when trying to execute fault node " + getFaultNode().getName());
-                System.err.println("Continuing without setting value.");
+                logger.error("Could not find variable scope for variable {}", faultVariable);
+                logger.error("when trying to execute fault node {}", getFaultNode().getName());
+                logger.error("Continuing without setting value.");
             }
     	}
     	return value;

@@ -1,11 +1,11 @@
-/**
- * Copyright 2005 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,15 +16,19 @@
 
 package org.jbpm.process.core.validation;
 
-import org.drools.definition.process.Process;
+import org.kie.api.definition.process.Process;
+import org.kie.api.io.Resource;
 
 /**
  * A validator for validating a RuleFlow process. 
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public interface ProcessValidator {
 
     ProcessValidationError[] validateProcess(Process process);
+    
+    boolean accept(Process process, Resource resource);
+    
+    boolean compilationSupported();
 
 }

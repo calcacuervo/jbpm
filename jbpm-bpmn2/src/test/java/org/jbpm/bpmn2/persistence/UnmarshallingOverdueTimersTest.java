@@ -1,6 +1,24 @@
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jbpm.bpmn2.persistence;
-import static junit.framework.Assert.*;
-import static org.drools.runtime.EnvironmentName.*;
+
+import static org.jbpm.persistence.util.PersistenceUtil.JBPM_PERSISTENCE_UNIT_NAME;
+import static org.jbpm.persistence.util.PersistenceUtil.cleanUp;
+import static org.jbpm.persistence.util.PersistenceUtil.createEnvironment;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -8,131 +26,83 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-
-import org.drools.KnowledgeBase;
-import org.drools.KnowledgeBaseFactory;
-import org.drools.base.MapGlobalResolver;
-import org.drools.builder.KnowledgeBuilder;
-import org.drools.builder.KnowledgeBuilderFactory;
-import org.drools.builder.ResourceType;
-import org.drools.impl.EnvironmentFactory;
-import org.drools.io.ResourceFactory;
-import org.drools.persistence.jpa.JPAKnowledgeService;
-import org.drools.runtime.Environment;
-import org.drools.runtime.KnowledgeSessionConfiguration;
-import org.drools.runtime.StatefulKnowledgeSession;
-import org.drools.runtime.process.ProcessInstance;
+import org.drools.core.impl.InternalKnowledgeBase;
+import org.drools.core.impl.KnowledgeBaseFactory;
 import org.jbpm.bpmn2.concurrency.MultipleProcessesPerThreadTest;
+import org.jbpm.persistence.util.PersistenceUtil;
+import org.jbpm.test.util.AbstractBaseTest;
+import org.jbpm.test.util.CountDownProcessEventListener;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.kie.api.KieBase;
+import org.kie.api.io.ResourceType;
+import org.kie.api.runtime.Environment;
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.KieSessionConfiguration;
+import org.kie.api.runtime.process.ProcessInstance;
+import org.kie.internal.builder.KnowledgeBuilder;
+import org.kie.internal.builder.KnowledgeBuilderFactory;
+import org.kie.internal.io.ResourceFactory;
+import org.kie.internal.persistence.jpa.JPAKnowledgeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bitronix.tm.BitronixTransactionManager;
-import bitronix.tm.TransactionManagerServices;
-import bitronix.tm.resource.jdbc.PoolingDataSource;
+public class UnmarshallingOverdueTimersTest extends AbstractBaseTest {
 
-public class UnmarshallingOverdueTimersTest {
+    private static final Logger logger = LoggerFactory.getLogger(MultipleProcessesPerThreadTest.class);
 
-    private static Logger logger = LoggerFactory.getLogger(MultipleProcessesPerThreadTest.class);
-
-    private static EntityManagerFactory emf;
-    private static PoolingDataSource pds;
+    private HashMap<String, Object> context;
 
     @Before
     public void setup() {
-        pds = new PoolingDataSource();
-
-        // The name must match what's in the persistence.xml!
-        pds.setUniqueName("jdbc/testDS1");
-
-        pds.setMaxPoolSize(16);
-        pds.setAllowLocalTransactions(true);
-
-        pds.setClassName("bitronix.tm.resource.jdbc.lrc.LrcXADataSource");
-        pds.getDriverProperties().put("user", "sa");
-        pds.getDriverProperties().put("password", "sasa");
-        pds.getDriverProperties().put("url", "jdbc:h2:file:jbpm-test");
-        pds.getDriverProperties().put("driverClassName", "org.h2.Driver" );
-
-        pds.init();
-
-        emf = Persistence.createEntityManagerFactory("org.jbpm.persistence.jpa");
-        assertNotNull("EntityManagerFactory is null.", emf);
+         context = PersistenceUtil.setupWithPoolingDataSource(JBPM_PERSISTENCE_UNIT_NAME);
     }
 
     @After
     public void tearDown() throws Exception {
-        BitronixTransactionManager txm = TransactionManagerServices.getTransactionManager();
-        if (txm != null) {
-            txm.shutdown();
-        }
-
-        try {
-            emf.close();
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-
-        try {
-            pds.close();
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-
+        cleanUp(context);
     }
 
-    private static KnowledgeBase loadKnowledgeBase(String bpmn2FileName) {
+    private static KieBase loadKnowledgeBase(String bpmn2FileName) {
         KnowledgeBuilder kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
         kbuilder.add(ResourceFactory.newClassPathResource(bpmn2FileName, UnmarshallingOverdueTimersTest.class), ResourceType.BPMN2);
-        KnowledgeBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
-        kbase.addKnowledgePackages(kbuilder.getKnowledgePackages());
+        InternalKnowledgeBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
+        kbase.addPackages(kbuilder.getKnowledgePackages());
         return kbase;
     }
 
-    private static Environment createEnvironment() { 
-        Environment env = EnvironmentFactory.newEnvironment();
-
-        env.set(ENTITY_MANAGER_FACTORY, emf);
-        env.set(TRANSACTION_MANAGER, TransactionManagerServices.getTransactionManager());
-        env.set(GLOBALS, new MapGlobalResolver());
-        
-        return env;
-    }
-    
-    private static StatefulKnowledgeSession createStatefulKnowledgeSession(KnowledgeBase kbase) {
-        Environment env = createEnvironment();
+    private KieSession createStatefulKnowledgeSession(KieBase kbase) {
+        Environment env = createEnvironment(context);
         return JPAKnowledgeService.newStatefulKnowledgeSession(kbase, null, env);
     }
 
-    private static int knowledgeSessionDispose(StatefulKnowledgeSession ksession) {
-        int ksessionId = ksession.getId();
+    private static long knowledgeSessionDispose(KieSession ksession) {
+        long ksessionId = ksession.getIdentifier();
         logger.debug("disposing of ksesssion");
         ksession.dispose();
         return ksessionId;
     }
 
-    private static StatefulKnowledgeSession reloadStatefulKnowledgeSession(String bpmn2FileName, int ksessionId) {
-        KnowledgeBase kbase = loadKnowledgeBase(bpmn2FileName);
+    private KieSession reloadStatefulKnowledgeSession(String bpmn2FileName, int ksessionId) {
+        KieBase kbase = loadKnowledgeBase(bpmn2FileName);
 
-        logger.debug(". reloading ksession " + ksessionId);
+        logger.debug("reloading ksession {}", ksessionId);
         Environment env = null;
-        env = createEnvironment();
+        env = createEnvironment(context);
 
         return JPAKnowledgeService.loadStatefulKnowledgeSession(ksessionId, kbase, null, env);
     }
 
-    private static long seconds = 10;
+    private static long seconds = 2;
     private static String timeUnit = "s";
     private static String bpmn2FileName = "BPMN2-TimerInterrupted.bpmn2";
 
     private static boolean debug = true;
     
-    @Test
+    @Test(timeout=10000)
     public void startDisposeAndReloadTimerProcess() throws Exception {
+        CountDownProcessEventListener countDownListener = new CountDownProcessEventListener("timer", 1);
         if( debug ) { 
             String shellVar = "TEST";
             String shellVarVal = System.getenv(shellVar);
@@ -147,9 +117,9 @@ public class UnmarshallingOverdueTimersTest {
         String processPropVal = System.getenv(sessionPropName);
         
         if (sessionPropVal == null || debug ) {
-            KnowledgeBase kbase = loadKnowledgeBase(bpmn2FileName);
-            StatefulKnowledgeSession ksession = createStatefulKnowledgeSession(kbase);
-
+            KieBase kbase = loadKnowledgeBase(bpmn2FileName);
+            KieSession ksession = createStatefulKnowledgeSession(kbase);
+            ksession.addEventListener(countDownListener);
             // setup parameters
             Map<String, Object> params = new HashMap<String, Object>();
             params.put("time", seconds + timeUnit);
@@ -165,43 +135,39 @@ public class UnmarshallingOverdueTimersTest {
                 processPropVal = Long.toString(processId);
             }
             else { 
-                logger.info("export " + processPropName + "=" + processId );
+                logger.info("export {}={}", processPropName, processId );
             }
 
             // dispose of session 
-            KnowledgeSessionConfiguration config = ksession.getSessionConfiguration();
-            int ksessionId = knowledgeSessionDispose(ksession);
+            KieSessionConfiguration config = ksession.getSessionConfiguration();
+            long ksessionId = knowledgeSessionDispose(ksession);
             
             // print info for next test
             if( debug ) { 
-                sessionPropVal = Integer.toString(ksessionId);
+                sessionPropVal = Long.toString(ksessionId);
             }
             else { 
-                logger.info("export " + sessionPropName + "=" + ksessionId );
+                logger.info("export {}={}", sessionPropName, ksessionId );
                 
             }
             
             if( !debug ) { 
                 cal.add(Calendar.SECOND, (int) seconds);
                 SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
-                logger.info("\nPlease wait at least " + seconds + timeUnit + " [" +  sdf.format(cal.getTime()) + "]\n" );
+                logger.info("Please wait at least {} [{}]", (seconds + timeUnit),  sdf.format(cal.getTime()));
             }
         } 
-        
-        if( debug ) { 
-            long wait = (long) ((double) seconds * 1000d * 1.1);
-            logger.debug("sleeping " + wait + " seconds" );
-            Thread.sleep(seconds * 1000 );
-        }
+       
         
         if( sessionPropVal != null || debug ) {
             // reload session
             int ksessionId = Integer.parseInt(sessionPropVal);
-            StatefulKnowledgeSession ksession = reloadStatefulKnowledgeSession(bpmn2FileName, ksessionId);
+            KieSession ksession = reloadStatefulKnowledgeSession(bpmn2FileName, ksessionId);
+            ksession.addEventListener(countDownListener);
             long processInstanceId = Integer.parseInt(processPropVal);
 
             logger.debug("! waiting 5 seconds for timer to fire");
-            Thread.sleep(5 * 1000);
+            countDownListener.waitTillCompleted();
             
             ProcessInstance processInstance = ksession.getProcessInstance(processInstanceId);
             if( processInstance != null ) { 

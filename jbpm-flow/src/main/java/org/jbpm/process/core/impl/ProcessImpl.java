@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,24 +16,25 @@
 
 package org.jbpm.process.core.impl;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import org.drools.io.Resource;
 import org.jbpm.process.core.Context;
 import org.jbpm.process.core.ContextContainer;
 import org.jbpm.process.core.ContextResolver;
 import org.jbpm.process.core.Process;
 import org.jbpm.process.core.context.AbstractContext;
+import org.kie.api.io.Resource;
 
 /**
  * Default implementation of a Process
  * 
- * @author <a href="mailto:kris_verlaenen@hotmail.com">Kris Verlaenen</a>
  */
 public class ProcessImpl implements Process, Serializable, ContextResolver {
     
@@ -47,7 +48,8 @@ public class ProcessImpl implements Process, Serializable, ContextResolver {
     private Resource resource;
     private ContextContainer contextContainer = new ContextContainerImpl();
     private Map<String, Object> metaData = new HashMap<String, Object>();
-    private List<String> imports;
+    private transient Map<String, Object> runtimeMetaData = new HashMap<String, Object>();
+    private Set<String> imports;
     private Map<String, String> globals;
     private List<String> functionImports;
 
@@ -107,6 +109,7 @@ public class ProcessImpl implements Process, Serializable, ContextResolver {
 
     public void setDefaultContext(Context context) {
         this.contextContainer.setDefaultContext(context);
+        ((AbstractContext) context).setContextContainer(this);
     }
     
     public Context getDefaultContext(String contextType) {
@@ -115,14 +118,14 @@ public class ProcessImpl implements Process, Serializable, ContextResolver {
 
     public boolean equals(final Object o) {
         if ( o instanceof ProcessImpl ) {
-        	if (this.id != null) {
+        	if (this.id == null) {
         		return ((ProcessImpl) o).getId() == null;
         	}
         	return this.id.equals(((ProcessImpl) o).getId());
         }
         return false;
     }
-
+    
     public int hashCode() {
         return this.id == null ? 0 : 3 * this.id.hashCode();
     }
@@ -158,11 +161,11 @@ public class ProcessImpl implements Process, Serializable, ContextResolver {
         this.resource = resource;        
     }
     
-    public List<String> getImports() {
+    public Set<String> getImports() {
         return imports;
     }
 
-    public void setImports(List<String> imports) {
+    public void setImports(Set<String> imports) {
         this.imports = imports;
     }
     
@@ -199,5 +202,20 @@ public class ProcessImpl implements Process, Serializable, ContextResolver {
     public String getNamespace() {
         return packageName;
     }
+
+    public Map<String, Object> getRuntimeMetaData() {
+        return runtimeMetaData;
+    }
+
+    public void setRuntimeMetaData(Map<String, Object> runtimeMetaData) {
+        this.runtimeMetaData = runtimeMetaData;
+    }
     
+    /*
+     * Special handling for serialization to initialize transient (runtime related) meta data
+     */
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        this.runtimeMetaData = new HashMap<String, Object>();
+    }
 }

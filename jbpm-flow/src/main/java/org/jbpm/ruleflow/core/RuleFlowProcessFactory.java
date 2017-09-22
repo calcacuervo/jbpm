@@ -1,11 +1,11 @@
-/**
- * Copyright 2010 JBoss Inc
+/*
+ * Copyright 2017 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,9 +18,10 @@ package org.jbpm.ruleflow.core;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
-import org.drools.process.core.datatype.DataType;
+import org.jbpm.process.core.datatype.DataType;
 import org.jbpm.process.core.context.exception.ActionExceptionHandler;
 import org.jbpm.process.core.context.exception.ExceptionHandler;
 import org.jbpm.process.core.context.swimlane.Swimlane;
@@ -28,8 +29,12 @@ import org.jbpm.process.core.context.variable.Variable;
 import org.jbpm.process.core.validation.ProcessValidationError;
 import org.jbpm.ruleflow.core.validation.RuleFlowProcessValidator;
 import org.jbpm.workflow.core.impl.DroolsConsequenceAction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RuleFlowProcessFactory extends RuleFlowNodeContainerFactory {
+    
+    private static final Logger logger = LoggerFactory.getLogger(RuleFlowProcessFactory.class);
 
     public static RuleFlowProcessFactory createProcess(String id) {
         return new RuleFlowProcessFactory(id);
@@ -61,7 +66,7 @@ public class RuleFlowProcessFactory extends RuleFlowNodeContainerFactory {
     }
 
     public RuleFlowProcessFactory imports(String... imports) {
-    	getRuleFlowProcess().setImports(Arrays.asList(imports));
+    	getRuleFlowProcess().setImports(new HashSet<String>(Arrays.asList(imports)));
         return this;
     }
     
@@ -90,12 +95,23 @@ public class RuleFlowProcessFactory extends RuleFlowNodeContainerFactory {
     }
     
     public RuleFlowProcessFactory variable(String name, DataType type, Object value) {
+    	return variable(name, type, value, null, null);
+    }
+    
+    public RuleFlowProcessFactory variable(String name, DataType type, String metaDataName, Object metaDataValue) {
+    	return variable(name, type, null, metaDataName, metaDataValue);
+    }
+    
+    public RuleFlowProcessFactory variable(String name, DataType type, Object value, String metaDataName, Object metaDataValue) {
     	Variable variable = new Variable();
     	variable.setName(name);
     	variable.setType(type);
     	variable.setValue(value);
+    	if (metaDataName != null && metaDataValue != null) {
+    		variable.setMetaData(metaDataName, metaDataValue);
+    	}
     	getRuleFlowProcess().getVariableScope().getVariables().add(variable);
-        return this;
+    	return this;
     }
     
     public RuleFlowProcessFactory swimlane(String name) {
@@ -119,7 +135,7 @@ public class RuleFlowProcessFactory extends RuleFlowNodeContainerFactory {
     public RuleFlowProcessFactory validate() {
         ProcessValidationError[] errors = RuleFlowProcessValidator.getInstance().validateProcess(getRuleFlowProcess());
         for (ProcessValidationError error : errors) {
-            System.err.println(error);
+            logger.error(error.toString());
         }
         if (errors.length > 0) {
             throw new RuntimeException("Process could not be validated !");
